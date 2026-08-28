@@ -7,39 +7,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SiteLedger">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icon.svg">
-<link rel="stylesheet" href="styles.css?v=12">
-<link rel="stylesheet" href="drawings.css?v=4">
-<link rel="stylesheet" href="drawing-workspace.css?v=1">
-<link rel="stylesheet" href="drawing-annotations.css?v=1">
-<title>SiteLedger</title>
-</head>
-<body>
-<div id="app"></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script>if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
-<script src="app.js?v=12"></script>
-<script src="drawings.js?v=4"></script>
-<script src="drawing-workspace.js?v=1"></script>
-<script src="drawing-annotations.js?v=1"></script>
-<script>
-if('serviceWorker' in navigator){
-  window.addEventListener('load',async()=>{
-    try{
-      const reg=await navigator.serviceWorker.register('./sw.js?v=18');
-      await reg.update();
-      if(reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'});
-    }catch(e){}
-  });
-  navigator.serviceWorker.addEventListener('controllerchange',()=>{
-    if(!sessionStorage.getItem('sl_sw_reloaded_v18')){
-      sessionStorage.setItem('sl_sw_reloaded_v18','1');
-      location.reload();
-    }
-  });
-}
-</script>
-</body>
-</html>
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="icon.svg">
+<link rel="stylesheet" href="styles.css?v=12"><link rel="stylesheet" href="drawings.css?v=4"><link rel="stylesheet" href="drawing-workspace.css?v=1"><link rel="stylesheet" href="drawing-annotations.css?v=1"><title>SiteLedger</title>
+</head><body><div id="app"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script><script>if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+<script src="app.js?v=12"></script><script src="drawings.js?v=4"></script><script src="drawing-workspace.js?v=1"></script><script src="rfi.js?v=1"></script><script src="drawing-annotations.js?v=2"></script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',async()=>{try{const reg=await navigator.serviceWorker.register('./sw.js?v=19');await reg.update();if(reg.waiting)reg.waiting.postMessage({type:'SKIP_WAITING'})}catch(e){}});navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!sessionStorage.getItem('sl_sw_reloaded_v19')){sessionStorage.setItem('sl_sw_reloaded_v19','1');location.reload()}})}</script>
+</body></html>
