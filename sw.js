@@ -1,5 +1,5 @@
-const CACHE='siteledger-v15';
-const SHELL=['./','./index.html','./styles.css?v=12','./drawings.css?v=3','./app.js?v=12','./drawings.js?v=3','./manifest.webmanifest','./icon.svg'];
+const CACHE='siteledger-v16';
+const SHELL=['./','./index.html','./styles.css?v=12','./drawings.css?v=4','./app.js?v=12','./drawings.js?v=4','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
 self.addEventListener('message',e=>{if(e.data&&e.data.type==='SKIP_WAITING')self.skipWaiting()});
