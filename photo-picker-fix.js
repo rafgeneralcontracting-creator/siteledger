@@ -1,0 +1,3 @@
+(function(){
+window.photoForm=function(){modal(`<h2>Add Progress Photo</h2><div class="field"><label>Photo</label><input id="p_file" type="file" accept="image/*"></div><div class="small" style="margin-top:-8px;margin-bottom:12px">On iPhone/iPad you can choose Photo Library or Take Photo.</div><div class="field"><label>Caption</label><input id="p_caption"></div><div class="field"><label>Area / Floor</label><input id="p_area"></div><div class="field"><label><input id="p_client" type="checkbox" checked style="width:auto;margin-right:7px"> Include in client PDF</label></div><div class="actions"><button class="btn secondary" onclick="closeModal()">Cancel</button><button id="p_save" class="btn primary" onclick="savePhoto()">Upload</button></div>`)};
+})();
