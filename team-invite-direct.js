@@ -1,0 +1,6 @@
+(function(){
+const nativeShare=navigator.share?navigator.share.bind(navigator):null;
+async function sendInvite(url){const m=String(url||'').match(/[?&]team-invite=([^&#]+)/);if(!m)throw new Error('Invite token missing.');const invite_token=decodeURIComponent(m[1]);const r=await fetch(`${SB}/functions/v1/send-team-invite`,{method:'POST',headers:{apikey:KEY,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({invite_token})}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.message||'Could not send invite email.');alert(`Invite sent from ${d.from} to ${d.to}.`);return d}
+if(nativeShare){navigator.share=async function(data){if(data?.title==='SiteLedger Invite'&&String(data?.url||'').includes('team-invite=')){try{await sendInvite(data.url);return}catch(e){alert(e.message||'Could not send invite email.');return}}return nativeShare(data)}}
+else Object.defineProperty(navigator,'share',{configurable:true,value:async function(data){if(data?.title==='SiteLedger Invite'&&String(data?.url||'').includes('team-invite=')){try{await sendInvite(data.url)}catch(e){alert(e.message||'Could not send invite email.')}return}throw new Error('Share unavailable')}});
+})();
