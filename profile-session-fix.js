@@ -1,0 +1,5 @@
+(function(){
+async function loadOwnProfile(){if(!token)return false;const u=await api('/auth/v1/user',{headers:{Authorization:'Bearer '+token}});if(!u?.id)return false;const ps=await rest(`profiles?select=*&id=eq.${u.id}&limit=1`);if(!ps.length)return false;me=ps[0];org=(await rest(`organizations?select=*&id=eq.${me.organization_id}&limit=1`))[0];return true}
+const oldBoot=boot;boot=async function(){loading();try{if(!(await loadOwnProfile()))throw new Error('No SiteLedger profile found.');go('home')}catch(e){showSignin(notice(e.message))}};
+if(token){loadOwnProfile().then(ok=>{if(!ok)return;if(route?.screen==='home')home();else{const chip=document.querySelector('.userchip');if(chip)chip.textContent=me?.full_name||'';const sub=document.querySelector('.brandsub');if(sub)sub.textContent=org?.name||'SiteLedger'}}).catch(e=>console.error('Profile session fix',e))}
+})();
