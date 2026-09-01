@@ -12,6 +12,22 @@
       if(parent && parent.querySelector('textarea,input,select')) parent.remove();
     });
   }
+  function removeSiteConditionsSection(){
+    [...document.querySelectorAll('.section')].forEach(section=>{
+      if((section.textContent||'').trim()!=='Site Conditions') return;
+      const next=section.nextElementSibling;
+      if(next && next.classList.contains('card')) next.remove();
+      section.remove();
+    });
+    const details=document.getElementById('sl-more-details');
+    if(details){
+      const summary=details.querySelector('summary');
+      if(summary && /site conditions/i.test(summary.textContent||'')){
+        const small=summary.querySelector('.small');
+        if(small) small.textContent='Deliveries, delays, inspections & safety';
+      }
+    }
+  }
   function simplify() {
     clearTimeout(timer);
     timer = setTimeout(() => {
@@ -19,6 +35,7 @@
       if (!brand || brand.textContent.trim() !== 'Daily Report') return;
       removeFieldByText('Areas / Floors');
       removeFieldByText('General Conditions');
+      removeSiteConditionsSection();
     }, 30);
   }
   new MutationObserver(simplify).observe(document.documentElement,{childList:true,subtree:true});
