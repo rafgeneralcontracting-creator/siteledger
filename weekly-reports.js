@@ -23,8 +23,8 @@
 
   async function weeklySigned(path){return signedUrl('report-pdfs',path)}
   window.slOpenWeekly=async path=>{try{if(!path)return alert('Weekly PDF is not ready yet.');window.open(await weeklySigned(path),'_blank')}catch(e){alert(e.message)}};
-  window.slDownloadWeekly=async(path,name)=>{try{if(!path)return alert('Weekly PDF is not ready yet.');const url=await weeklySigned(path),a=document.createElement('a');a.href=url;a.download=name||'SiteLedger-Weekly-Report.pdf';document.body.appendChild(a);a.click();a.remove()}catch(e){alert(e.message)}};
-  window.slShareWeekly=async(path,name)=>{try{if(!path)return alert('Weekly PDF is not ready yet.');const url=await weeklySigned(path),res=await fetch(url),blob=await res.blob(),file=new File([blob],name||'SiteLedger-Weekly-Report.pdf',{type:'application/pdf'});if(navigator.share&&navigator.canShare?.({files:[file]})){await navigator.share({title:'SiteLedger Weekly Report',files:[file]})}else{await slDownloadWeekly(path,name);alert('The PDF was downloaded. Attach it to your email from your mail app.')}}catch(e){alert(e.message)}};
+  window.slDownloadWeekly=async(path,name)=>{try{if(!path)return alert('Weekly PDF is not ready yet.');const url=await weeklySigned(path),res=await fetch(url);if(!res.ok)throw new Error('Could not download Weekly PDF.');const blob=await res.blob(),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name||'SiteLedger-Weekly-Report.pdf';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}catch(e){alert(e.message)}};
+  window.slShareWeekly=async(path,name)=>{try{if(!path)return alert('Weekly PDF is not ready yet.');const url=await weeklySigned(path),res=await fetch(url);if(!res.ok)throw new Error('Could not load Weekly PDF.');const blob=await res.blob(),file=new File([blob],name||'SiteLedger-Weekly-Report.pdf',{type:'application/pdf'});if(navigator.share&&navigator.canShare?.({files:[file]})){await navigator.share({title:'SiteLedger Weekly Report',files:[file]})}else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name||'SiteLedger-Weekly-Report.pdf';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);alert('The Weekly PDF was downloaded. Attach it to your email from your mail app.')}}catch(e){alert(e.message)}};
 
   function setView(which){
     const daily=document.getElementById('sl-report-daily-list');
@@ -48,48 +48,29 @@
     await ensureWeeklyReports();
     const page=document.querySelector('.page'); if(!page)return;
     const hero=page.querySelector('.hero'); if(!hero)return;
-
-    // Everything after the hero that belongs to the original Reports page becomes the Daily view.
     const dailyWrap=document.createElement('div');
     dailyWrap.id='sl-report-daily-list';
-    let node=hero.nextSibling;
-    const move=[];
+    let node=hero.nextSibling; const move=[];
     while(node){move.push(node);node=node.nextSibling}
     move.forEach(n=>dailyWrap.appendChild(n));
-
     const ps=await projects(), wr=await weeklyRows();
-    const weeklyWrap=document.createElement('div');
-    weeklyWrap.id='sl-report-weekly-list';
+    const weeklyWrap=document.createElement('div'); weeklyWrap.id='sl-report-weekly-list';
     const cards=wr.map(w=>{
       const p=ps.find(x=>x.id===w.project_id);
       const name=`${(p?.name||'Project').replace(/[^a-z0-9]+/gi,'-')}-${w.week_start}-Weekly.pdf`;
-      return `<div class="card"><div class="row"><div><div class="title">${esc(p?.name||'Project')}</div><div class="small">${fmt(w.week_start,{month:'short',day:'numeric',year:'numeric'})} – ${fmt(w.week_end,{month:'short',day:'numeric',year:'numeric'})}</div></div><span class="badge ${w.pdf_path?'done':'up'}">${w.pdf_path?'Ready':'Generating'}</span></div>${w.pdf_path?`<div class="actions" style="margin-top:12px"><button class="btn primary smallbtn" onclick="slOpenWeekly('${esc(w.pdf_path)}')">View PDF</button><button class="btn secondary smallbtn" onclick="slDownloadWeekly('${esc(w.pdf_path)}','${esc(name)}')">Download</button><button class="btn secondary smallbtn" onclick="slShareWeekly('${esc(w.pdf_path)}','${esc(name)}')">Email / Share</button></div>`:'<div class="small" style="margin-top:10px">This report is being generated automatically.</div>'}</div>`
+      const path=JSON.stringify(String(w.pdf_path||''));
+      const filename=JSON.stringify(name);
+      return `<div class="card"><div class="row"><div><div class="title">${esc(p?.name||'Project')}</div><div class="small">${fmt(w.week_start,{month:'short',day:'numeric',year:'numeric'})} – ${fmt(w.week_end,{month:'short',day:'numeric',year:'numeric'})}</div></div><span class="badge ${w.pdf_path?'done':'up'}">${w.pdf_path?'Ready':'Generating'}</span></div>${w.pdf_path?`<div class="actions" style="margin-top:12px"><button class="btn primary smallbtn" data-weekly-action="view" data-path=${esc(path)}>View PDF</button><button class="btn secondary smallbtn" data-weekly-action="download" data-path=${esc(path)} data-name=${esc(filename)}>Download</button><button class="btn secondary smallbtn" data-weekly-action="share" data-path=${esc(path)} data-name=${esc(filename)}>Email / Share</button></div>`:'<div class="small" style="margin-top:10px">This report is being generated automatically.</div>'}</div>`
     }).join('');
     weeklyWrap.innerHTML=`<div class="section">Weekly Reports</div>${cards||'<div class="card empty">Weekly Reports will appear here automatically after each completed work week.</div>'}`;
-
-    const tabs=document.createElement('div');
-    tabs.id='sl-report-tabs';
-    tabs.className='card';
-    tabs.style.padding='10px';
-    tabs.style.marginBottom='16px';
+    weeklyWrap.addEventListener('click',e=>{const b=e.target.closest('[data-weekly-action]');if(!b)return;const path=JSON.parse(b.dataset.path||'""'),name=b.dataset.name?JSON.parse(b.dataset.name):'';if(b.dataset.weeklyAction==='view')slOpenWeekly(path);else if(b.dataset.weeklyAction==='download')slDownloadWeekly(path,name);else slShareWeekly(path,name)});
+    const tabs=document.createElement('div'); tabs.id='sl-report-tabs'; tabs.className='card'; tabs.style.padding='10px'; tabs.style.marginBottom='16px';
     tabs.innerHTML=`<div class="actions" style="margin:0"><button id="sl-tab-daily" class="btn primary" onclick="slShowDailyReports()">Daily Reports</button><button id="sl-tab-weekly" class="btn secondary" onclick="slShowWeeklyReports()">Weekly Reports</button></div>`;
-
-    hero.insertAdjacentElement('afterend',tabs);
-    tabs.insertAdjacentElement('afterend',dailyWrap);
-    dailyWrap.insertAdjacentElement('afterend',weeklyWrap);
+    hero.insertAdjacentElement('afterend',tabs); tabs.insertAdjacentElement('afterend',dailyWrap); dailyWrap.insertAdjacentElement('afterend',weeklyWrap);
     setView(sessionStorage.getItem('sl_reports_view')==='weekly'?'weekly':'daily');
   }
-
   let t;function patch(){clearTimeout(t);t=setTimeout(renderReportsTabs,80)}
-  new MutationObserver(patch).observe(document.documentElement,{childList:true,subtree:true});
-  patch();
-
+  new MutationObserver(patch).observe(document.documentElement,{childList:true,subtree:true}); patch();
   const originalSubmit=window.submitReport;
-  if(originalSubmit) window.submitReport=async function(){
-    await originalSubmit();
-    try{
-      const r=(await rest(`daily_reports?select=project_id,log_date,submitted&id=eq.${route.reportId}`))[0];
-      if(r?.submitted&&plus(monday(r.log_date),4)<=today)await edge('generate-weekly-report-pdf',{project_id:r.project_id,week_start:monday(r.log_date)})
-    }catch(e){console.warn(e.message)}
-  };
+  if(originalSubmit) window.submitReport=async function(){await originalSubmit();try{const r=(await rest(`daily_reports?select=project_id,log_date,submitted&id=eq.${route.reportId}`))[0];if(r?.submitted&&plus(monday(r.log_date),4)<=today)await edge('generate-weekly-report-pdf',{project_id:r.project_id,week_start:monday(r.log_date)})}catch(e){console.warn(e.message)}};
 })();
