@@ -1,0 +1,16 @@
+/* Cleaner field-first drawing controls */
+.sl-takeoffbar{gap:8px!important;align-items:center!important;overflow-x:auto!important;padding-bottom:4px!important;scrollbar-width:none}
+.sl-takeoffbar::-webkit-scrollbar{display:none}
+.sl-takeoffbar .sl-takeoff{white-space:nowrap;min-height:42px}
+.sl-takeoffbar #tool_distance,.sl-takeoffbar #tool_area,.sl-takeoffbar #tool_count{font-weight:750}
+.sl-takeoffbar #tool_calibrate{border-style:dashed}
+.sl-takeoffbar .sl-secondary-tool{opacity:.78}
+.sl-scale-status{cursor:pointer;transition:transform .12s ease,box-shadow .12s ease}
+.sl-scale-status:active{transform:scale(.99)}
+.sl-scale-status.ready:after{content:'  ·  Tap to recalibrate';font-size:12px;font-weight:600;opacity:.68}
+.sl-precision-tip{margin:8px 0 10px;padding:10px 12px;border-radius:10px;background:rgba(15,23,42,.05);font-size:12px;line-height:1.4;color:var(--muted,#64748b)}
+@media(max-width:700px){
+  .sl-takeoffbar{margin-left:-4px;margin-right:-4px;padding-left:4px;padding-right:4px}
+  .sl-takeoffbar .sl-takeoff{min-height:44px;padding-left:12px;padding-right:12px}
+  .sl-precision-tip{font-size:11px}
+}
