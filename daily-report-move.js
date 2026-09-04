@@ -5,19 +5,18 @@ window.openMoveDailyReport=async function(){
   try{
     const r=(await rest(`daily_reports?select=id,project_id,log_date,submitted&id=eq.${route.reportId}&limit=1`))[0];
     if(!r)return alert('Daily Report not found.');
-    const ps=await projects(),opts=ps.filter(p=>p.id!==r.project_id).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
-    if(!opts)return alert('There are no other active projects to move this report to.');
-    modal(`<h2>Move Daily Report</h2><div class="small" style="margin-bottom:14px">Move this ${r.log_date} report, including its photos, manpower, deliveries, issues and attachments, to the correct project.</div><div class="field"><label>Move to Project</label><select id="sl_move_report_project">${opts}</select></div>${r.submitted?'<div class="notice warn">This report is already submitted. Its old PDF will be cleared and a new PDF will be generated for the correct project.</div>':''}<div class="actions"><button class="btn secondary" onclick="closeModal()">Cancel</button><button id="sl_move_report_go" class="btn primary" onclick="moveDailyReportNow()">Move Report</button></div>`);
+    const ps=await projects(),opts=ps.map(p=>`<option value="${p.id}" ${p.id===r.project_id?'selected':''}>${esc(p.name)}</option>`).join('');
+    modal(`<h2>Move Daily Report</h2><div class="small" style="margin-bottom:14px">Move this ${r.log_date} report, including its photos, manpower, deliveries, issues and attachments, to the correct project.</div><div class="field"><label>Project</label><select id="sl_move_report_project">${opts}</select></div><div class="field"><label>Report Date</label><input id="sl_move_report_date" type="date" value="${r.log_date}"></div>${r.submitted?'<div class="notice warn">This report is already submitted. Its old PDF will be cleared and a new PDF will be generated for the correct project.</div>':''}<div class="actions"><button class="btn secondary" onclick="closeModal()">Cancel</button><button id="sl_move_report_go" class="btn primary" onclick="moveDailyReportNow()">Move Report</button></div>`);
   }catch(e){alert(e.message)}
 };
 window.moveDailyReportNow=async function(){
-  const target=$('sl_move_report_project')?.value,btn=$('sl_move_report_go');
+  const target=$('sl_move_report_project')?.value,date=$('sl_move_report_date')?.value,btn=$('sl_move_report_go');
   if(!target)return;
   if(!confirm('Move this Daily Report to the selected project?'))return;
   btn.disabled=true;btn.textContent='Moving…';
   try{
     const before=(await rest(`daily_reports?select=submitted&id=eq.${route.reportId}&limit=1`))[0];
-    await rest('rpc/move_daily_report',{method:'POST',body:JSON.stringify({p_report_id:route.reportId,p_target_project_id:target})});
+    await rest('rpc/move_daily_report',{method:'POST',body:JSON.stringify({p_report_id:route.reportId,p_target_project_id:target,p_target_date:date})});
     closeModal();
     if(before?.submitted){
       try{await edge('generate-report-pdf',{report_id:route.reportId})}catch(e){console.warn('Moved report; PDF regeneration failed',e)}
