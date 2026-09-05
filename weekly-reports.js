@@ -9,7 +9,15 @@
     try{
       const all=await reports(),existing=await weeklyRows(),candidates=new Map();
       for(const r of all){if(!r.submitted)continue;const ws=monday(r.log_date),we=plus(ws,4);if(we>today)continue;candidates.set(`${r.project_id}:${ws}`,{project_id:r.project_id,week_start:ws})}
-      for(const c of candidates.values()){if(existing.some(w=>w.project_id===c.project_id&&w.week_start===c.week_start&&w.pdf_path))continue;try{await edge('generate-weekly-report-pdf',c)}catch(e){console.warn('Weekly report generation skipped:',e.message)}}
+      for(const c of candidates.values()){
+        const w=existing.find(x=>x.project_id===c.project_id&&x.week_start===c.week_start);
+        const we=plus(c.week_start,4);
+        const source=all.filter(r=>r.project_id===c.project_id&&r.submitted&&r.log_date>=c.week_start&&r.log_date<=we);
+        const latest=source.map(r=>r.submitted_at||r.updated_at||r.created_at).filter(Boolean).sort().pop()||null;
+        const stale=!w?.pdf_path||!w?.generated_at||(latest&&new Date(latest)>new Date(w.generated_at));
+        if(!stale)continue;
+        try{await edge('generate-weekly-report-pdf',c)}catch(e){console.warn('Weekly report generation skipped:',e.message)}
+      }
     }catch(e){console.warn('Weekly reports:',e.message)}
   }
 
