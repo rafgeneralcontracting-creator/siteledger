@@ -1,5 +1,6 @@
 // Automatic weekly report generation with clearly separated Daily / Weekly report libraries.
 (() => {
+  let weeklyRefreshRunning=false;
   const dateOnly=d=>d.toISOString().slice(0,10);
   function monday(s){const d=new Date((s||today)+'T12:00:00');const k=d.getDay();d.setDate(d.getDate()+(k===0?-6:1-k));return dateOnly(d)}
   function plus(s,n){const d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return dateOnly(d)}
@@ -40,7 +41,7 @@
   async function render(){
     const brand=document.querySelector('.topbar .brand');
     if(!brand||brand.textContent.trim()!=='Reports'||document.getElementById('sl-report-library'))return;
-    await ensureWeeklyReports();
+    // Render immediately; weekly regeneration runs in the background.
     const page=document.querySelector('.page');if(!page)return;
     const [ps,dailies,weeklies]=await Promise.all([projects(),reports(),weeklyRows()]);
     const submitted=dailies.filter(r=>r.submitted).sort((a,b)=>b.log_date.localeCompare(a.log_date));
@@ -49,6 +50,17 @@
     page.innerHTML=`<div id="sl-report-library"><div class="hero"><div class="eyebrow">Report Library</div><h1>Reports</h1><p>Daily Reports document one workday. Weekly Reports summarize the full work week.</p></div><div class="card" style="padding:10px;margin-bottom:16px"><div class="actions" style="margin:0"><button id="sl-tab-daily" class="btn primary" onclick="slShowDailyReports()">Daily Reports (${submitted.length})</button><button id="sl-tab-weekly" class="btn secondary" onclick="slShowWeeklyReports()">Weekly Reports (${weeklies.length})</button></div></div><div id="sl-daily-library"><div class="section">Daily Reports</div>${dailyCards||'<div class="card empty">No submitted Daily Reports yet.</div>'}</div><div id="sl-weekly-library" class="hidden"><div class="section">Weekly Reports</div>${weeklyCards||'<div class="card empty">No Weekly Reports yet.</div>'}</div></div>`;
     page.querySelector('#sl-weekly-library')?.addEventListener('click',e=>{const b=e.target.closest('[data-weekly-action]');if(!b)return;const path=b.dataset.path||'',name=b.dataset.name||'';if(b.dataset.weeklyAction==='view')slOpenWeekly(path);else if(b.dataset.weeklyAction==='download')slDownloadWeekly(path,name);else slShareWeekly(path,name)});
     activate(sessionStorage.getItem('sl_reports_view')==='weekly'?'weekly':'daily');
+    if(!weeklyRefreshRunning){
+      weeklyRefreshRunning=true;
+      ensureWeeklyReports().then(async()=>{
+        weeklyRefreshRunning=false;
+        const brand=document.querySelector('.topbar .brand');
+        if(brand&&brand.textContent.trim()==='Reports'){
+          document.getElementById('sl-report-library')?.remove();
+          await render();
+        }
+      }).catch(e=>{weeklyRefreshRunning=false;console.warn('Weekly refresh:',e.message)});
+    }
   }
   let t;function patch(){clearTimeout(t);t=setTimeout(render,80)}
   new MutationObserver(patch).observe(document.documentElement,{childList:true,subtree:true});patch();
