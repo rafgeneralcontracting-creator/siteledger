@@ -1,6 +1,6 @@
 // Automatic weekly report generation with clearly separated Daily / Weekly report libraries.
 (() => {
-  let weeklyRefreshRunning=false;
+  let weeklyRefreshRunning=false,renderRunning=false;
   const dateOnly=d=>d.toISOString().slice(0,10);
   function monday(s){const d=new Date((s||today)+'T12:00:00');const k=d.getDay();d.setDate(d.getDate()+(k===0?-6:1-k));return dateOnly(d)}
   function plus(s,n){const d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return dateOnly(d)}
@@ -39,10 +39,12 @@
   window.slShowWeeklyReports=()=>activate('weekly');
 
   async function render(skipBackgroundRefresh=false){
+    if(renderRunning)return;
     const brand=document.querySelector('.topbar .brand');
     if(!brand||brand.textContent.trim()!=='Reports'||document.getElementById('sl-report-library'))return;
+    renderRunning=true;
     // Render immediately; weekly regeneration runs in the background.
-    const page=document.querySelector('.page');if(!page)return;
+    const page=document.querySelector('.page');if(!page){renderRunning=false;return;}
     const [ps,dailies,weeklies]=await Promise.all([projects(),reports(),weeklyRows()]);
     const submitted=dailies.filter(r=>r.submitted).sort((a,b)=>b.log_date.localeCompare(a.log_date));
     const dailyCards=submitted.map(r=>{const p=ps.find(x=>x.id===r.project_id);return `<div class="card"><div class="row"><div><div style="margin-bottom:6px"><span class="badge info">DAILY REPORT</span></div><div class="title">${fmt(r.log_date,{weekday:'long',month:'short',day:'numeric',year:'numeric'})}</div><div class="small">${esc(p?.name||'Project')}</div></div><span class="badge done">Submitted</span></div><div class="actions" style="margin-top:12px"><button class="btn secondary smallbtn" onclick="go('report','${r.id}')">View Report</button>${r.pdf_path?`<button class="btn primary smallbtn" onclick="openPdf('${r.id}','${esc(r.pdf_path)}')">View PDF</button><button class="btn secondary smallbtn" onclick="sharePdf('${r.id}','${esc(r.pdf_path)}')">Share PDF</button>`:`<button class="btn primary smallbtn" onclick="generatePdf('${r.id}')">Generate PDF</button>`}</div></div>`}).join('');
@@ -52,15 +54,11 @@
     activate(sessionStorage.getItem('sl_reports_view')==='weekly'?'weekly':'daily');
     if(!skipBackgroundRefresh&&!weeklyRefreshRunning){
       weeklyRefreshRunning=true;
-      ensureWeeklyReports().then(async()=>{
-        const brand=document.querySelector('.topbar .brand');
-        if(brand&&brand.textContent.trim()==='Reports'){
-          document.getElementById('sl-report-library')?.remove();
-          await render(true);
-        }
+      ensureWeeklyReports().then(()=>{
         weeklyRefreshRunning=false;
       }).catch(e=>{weeklyRefreshRunning=false;console.warn('Weekly refresh:',e.message)});
     }
+    renderRunning=false;
   }
   let t;function patch(){clearTimeout(t);t=setTimeout(render,80)}
   new MutationObserver(patch).observe(document.documentElement,{childList:true,subtree:true});patch();
