@@ -58,7 +58,7 @@
 
         const entries = state.mp.map(m => `
           <div class="inline" style="margin-bottom:8px">
-            <div class="inlinehead"><span>${esc(m.trade)}</span><span>${Number(m.worker_count || 0)} workers</span></div>
+            <div class="inlinehead"><span>${esc(m.company || m.trade)}</span><span>${Number(m.worker_count || 0)} workers</span></div>${m.company && m.trade ? `<div class="small">${esc(m.trade)}</div>` : ""}
             <div class="small">${Number(m.regular_hours || 0)} regular hrs${Number(m.overtime_hours || 0) ? ` · ${Number(m.overtime_hours)} OT` : ''}</div>
             ${state.locked ? '' : `<div class="actions" style="margin-top:8px"><button class="btn secondary smallbtn" onclick="slEditManpower('${m.id}')">Edit</button><button class="btn secondary smallbtn" onclick="slDeleteManpower('${m.id}')">Remove</button></div>`}
           </div>`).join('');
@@ -104,7 +104,7 @@
 
   window.slAddManpowerManual = function () {
     modal(`<h2>Add Manpower</h2>
-      <div class="field"><label>Trade / Company</label><input id="sl_m_trade"></div>
+      <div class="field"><label>Company</label><input id="sl_m_company" placeholder="e.g. FLS"></div><div class="field"><label>Trade</label><input id="sl_m_trade" placeholder="e.g. Structural Steel"></div>
       <div class="grid2"><div class="field"><label>Workers</label><input id="sl_m_workers" type="number" min="0" value="1"></div><div class="field"><label>Regular Hours</label><input id="sl_m_hours" type="number" min="0" step="0.5" value="8"></div></div>
       <div class="field"><label>Overtime Hours</label><input id="sl_m_ot" type="number" min="0" step="0.5" value="0"></div>
       <div class="actions"><button class="btn secondary" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="slSaveManualManpower()">Save</button></div>`);
@@ -112,10 +112,13 @@
 
   window.slSaveManualManpower = async function () {
     try {
+      const company = document.getElementById('sl_m_company')?.value.trim();
       const trade = document.getElementById('sl_m_trade')?.value.trim();
-      if (!trade) return alert('Enter the trade or company.');
+      if (!company) return alert('Enter the company.');
+      if (!trade) return alert('Enter the trade.');
       await rest('manpower', { method: 'POST', body: JSON.stringify({
         daily_report_id: route.reportId,
+        company,
         trade,
         worker_count: +(document.getElementById('sl_m_workers')?.value || 0),
         regular_hours: +(document.getElementById('sl_m_hours')?.value || 0),
@@ -131,7 +134,7 @@
       const m = (await rest(`manpower?select=*&id=eq.${id}&limit=1`))[0];
       if (!m) return alert('Manpower entry not found.');
       modal(`<h2>Edit Manpower</h2>
-        <div class="field"><label>Trade / Company</label><input id="sl_me_trade" value="${escAttr(m.trade)}"></div>
+        <div class="field"><label>Company</label><input id="sl_me_company" value="${escAttr(m.company || m.trade)}"></div><div class="field"><label>Trade</label><input id="sl_me_trade" value="${escAttr(m.trade)}"></div>
         <div class="grid2"><div class="field"><label>Workers</label><input id="sl_me_workers" type="number" min="0" value="${Number(m.worker_count || 0)}"></div><div class="field"><label>Regular Hours</label><input id="sl_me_hours" type="number" min="0" step="0.5" value="${Number(m.regular_hours || 0)}"></div></div>
         <div class="field"><label>Overtime Hours</label><input id="sl_me_ot" type="number" min="0" step="0.5" value="${Number(m.overtime_hours || 0)}"></div>
         <div class="actions"><button class="btn secondary" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="slSaveEditedManpower('${id}')">Save Changes</button></div>`);
@@ -140,9 +143,12 @@
 
   window.slSaveEditedManpower = async function (id) {
     try {
+      const company = document.getElementById('sl_me_company')?.value.trim();
       const trade = document.getElementById('sl_me_trade')?.value.trim();
-      if (!trade) return alert('Enter the trade or company.');
+      if (!company) return alert('Enter the company.');
+      if (!trade) return alert('Enter the trade.');
       await rest(`manpower?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({
+        company,
         trade,
         worker_count: +(document.getElementById('sl_me_workers')?.value || 0),
         regular_hours: +(document.getElementById('sl_me_hours')?.value || 0),
