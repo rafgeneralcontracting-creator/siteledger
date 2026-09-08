@@ -104,7 +104,7 @@
 
   window.slAddManpowerManual = function () {
     modal(`<h2>Add Manpower</h2>
-      <div class="field"><label>Company</label><input id="sl_m_company" placeholder="e.g. FLS"></div><div class="field"><label>Trade</label><input id="sl_m_trade" placeholder="e.g. Structural Steel"></div>
+      <div class="field"><label>Company</label><input id="sl_m_company" placeholder="e.g. ABC Construction"></div><div class="field"><label>Trade</label><input id="sl_m_trade" placeholder="e.g. Electrical"></div>
       <div class="grid2"><div class="field"><label>Workers</label><input id="sl_m_workers" type="number" min="0" value="1"></div><div class="field"><label>Regular Hours</label><input id="sl_m_hours" type="number" min="0" step="0.5" value="8"></div></div>
       <div class="field"><label>Overtime Hours</label><input id="sl_m_ot" type="number" min="0" step="0.5" value="0"></div>
       <div class="actions"><button class="btn secondary" onclick="closeModal()">Cancel</button><button class="btn primary" onclick="slSaveManualManpower()">Save</button></div>`);
