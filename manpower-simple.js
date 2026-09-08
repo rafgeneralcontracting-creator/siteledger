@@ -18,7 +18,8 @@
     const weekly = (await rest(`weekly_reports?select=id,pdf_path&project_id=eq.${r.project_id}&week_start=eq.${ws}&limit=1`))[0];
     const mp = await child('manpower', r.id);
     const sheets = await rest(`manpower_signin_sheets?select=id,daily_report_id,storage_path,created_at,reader&daily_report_id=eq.${r.id}&order=created_at.desc`);
-    return { r, mp, sheets, locked: !!weekly?.pdf_path };
+    const ownerEdit = !!r.submitted && ['owner','admin'].includes(String(me?.role||'').toLowerCase());
+    return { r, mp, sheets, locked: !!weekly?.pdf_path && !ownerEdit, ownerEdit };
   }
 
   function findWorkCard() {
