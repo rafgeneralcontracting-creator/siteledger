@@ -1,5 +1,5 @@
 (function(){
-function canEditSubmitted(){return ['owner','admin'].includes(String(me?.role||'').toLowerCase())}
+function canEditSubmitted(){return !!me && hasPermission('daily_reports')}
 function sectionCard(title){
   const sec=[...document.querySelectorAll('.section')].find(x=>x.textContent.trim()===title);
   if(!sec)return null;
