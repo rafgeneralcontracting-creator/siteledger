@@ -42,6 +42,7 @@
     b.innerHTML='<strong>Markup</strong>'+
       `<button class="sl-markup-tool ${tool==='pen'?'active':''}" onclick="setDrawingMarkupTool('pen')">✎ Draw</button>`+
       `<button class="sl-markup-tool ${tool==='highlight'?'active':''}" onclick="setDrawingMarkupTool('highlight')">▰ Highlight</button>`+
+      `<button class="sl-markup-tool ${tool==='eraser'?'active':''}" onclick="setDrawingMarkupTool('eraser')">⌫ Eraser</button>`+
       '<button class="sl-markup-tool" onclick="drawingMarkupNote()">T Note</button>'+
       '<span class="sl-markup-colors">'+palette.map(c=>`<button class="sl-markup-color ${c===color?'active':''}" style="--mc:${c}" onclick="setDrawingMarkupColor('${c}')" aria-label="Markup color"></button>`).join('')+'</span>'+
       `<button class="sl-markup-tool" onclick="undoDrawingMarkup()" ${!marks.length?'disabled':''}>Undo</button>`+
@@ -72,7 +73,18 @@
       const rows=await rest('drawing_markups',{method:'POST',body:JSON.stringify(body)}); if(rows?.[0])marks.push(rows[0]);
     }catch(e){alert(e?.message||'Could not save markup.')}finally{stroke=null;saving=false;toolbar();render()}
   }
-  function down(e){if(!active)return; const p=point(e),hi=tool==='highlight'; stroke={markup_type:hi?'highlight':'freehand',geometry:{points:[p]},color:hi?(color==='#111827'?'#f59e0b':color):color,stroke_width:hi?20:3,opacity:hi?.28:1,is_highlighter:hi};try{e.target.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault()}
+  async function eraseAt(p){
+    let best=null,bestD=.035;
+    for(const m of marks){
+      for(const a of (m.geometry?.points||[])){
+        const d=Math.hypot((a.x||0)-p.x,(a.y||0)-p.y);
+        if(d<bestD){bestD=d;best=m}
+      }
+    }
+    if(!best)return;
+    try{await rest(`drawing_markups?id=eq.${best.id}`,{method:'DELETE'});marks=marks.filter(x=>x.id!==best.id);toolbar();render()}catch(e){alert(e?.message||'Could not erase markup.')}
+  }
+  function down(e){if(!active)return; const p=point(e);if(tool==='eraser'){eraseAt(p);e.preventDefault();return}const hi=tool==='highlight'; stroke={markup_type:hi?'highlight':'freehand',geometry:{points:[p]},color:hi?(color==='#111827'?'#f59e0b':color):color,stroke_width:hi?20:3,opacity:hi?.28:1,is_highlighter:hi};try{e.target.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault()}
   function move(e){if(!active||!stroke)return; const p=point(e),pts=stroke.geometry.points,last=pts[pts.length-1]; if(!last||Math.hypot(p.x-last.x,p.y-last.y)>.0015){pts.push(p);render()}e.preventDefault()}
   function up(e){if(!active||!stroke)return; const p=point(e),pts=stroke.geometry.points;pts.push(p);saveCurrent();e.preventDefault()}
   function bind(){const c=canvas();if(!c||c.dataset.markupBound)return;c.dataset.markupBound='1';c.onpointerdown=down;c.onpointermove=move;c.onpointerup=up;c.onpointercancel=()=>{stroke=null;render()}}
