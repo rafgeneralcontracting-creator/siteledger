@@ -28,6 +28,5 @@
 
   const app=document.getElementById('app');
   if(app)new MutationObserver(()=>requestAnimationFrame(patchToolbar)).observe(app,{childList:true,subtree:true});
-  setInterval(patchToolbar,800);
   patchToolbar();
 })();
