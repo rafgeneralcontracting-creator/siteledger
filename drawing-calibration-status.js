@@ -22,17 +22,8 @@ async function sync(force=false){
     }
   }catch(e){console.error(e)}
 }
-let observedLabel=null;
-function watchLabel(){
-  const label=document.getElementById('sl_page_label');
-  if(label&&label!==observedLabel){
-    observedLabel=label;
-    new MutationObserver(()=>sync(true)).observe(label,{childList:true,characterData:true,subtree:true});
-    sync(true);
-  }
-  if(!label){observedLabel=null;last=''}
-}
-new MutationObserver(()=>watchLabel()).observe(document.getElementById('app'),{childList:true,subtree:true});
-setInterval(watchLabel,700);
-watchLabel();
+window.addEventListener('sl:drawing-mounted',()=>sync(true));
+window.addEventListener('sl:drawing-page',()=>sync(true));
+window.addEventListener('sl:drawing-unmounted',()=>{last=''});
+if(route?.screen==='drawing')sync(true);
 })();
