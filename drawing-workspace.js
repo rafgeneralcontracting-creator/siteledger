@@ -12,5 +12,5 @@ function enterWorkspace(){const page=document.querySelector('.page'),canvas=docu
  requestAnimationFrame(()=>window.dispatchEvent(new Event('resize')))}
 function leaveWorkspace(){if(document.getElementById('sl_canvas_wrap'))return;document.body.classList.remove('sl-workspace-active');document.getElementById('sl_takeoff_drawer')?.remove();document.getElementById('sl_drawer_backdrop')?.remove();initializedPage=null}
 function sync(){if(document.getElementById('sl_canvas_wrap'))enterWorkspace();else leaveWorkspace()}
-new MutationObserver(()=>requestAnimationFrame(sync)).observe(document.getElementById('app'),{childList:true,subtree:true});window.addEventListener('resize',()=>{if(document.body.classList.contains('sl-workspace-active'))updateTakeoffCount()});sync();
+window.addEventListener('sl:drawing-mounted',()=>requestAnimationFrame(sync));window.addEventListener('sl:drawing-unmounted',()=>requestAnimationFrame(sync));window.addEventListener('resize',()=>{if(document.body.classList.contains('sl-workspace-active'))updateTakeoffCount()});sync();
 })();
