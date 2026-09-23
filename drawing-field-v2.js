@@ -42,6 +42,7 @@
     const rfiBar=q('sl_rfi_session_bar');
     if(rfiBar) active('sl_field_rfi');
   }
-  new MutationObserver(()=>requestAnimationFrame(sync)).observe(document.getElementById('app'),{childList:true,subtree:true});
+  window.addEventListener('sl:drawing-mounted',()=>requestAnimationFrame(sync));
+  window.addEventListener('sl:drawing-page',()=>requestAnimationFrame(sync));
   sync();
 })();
