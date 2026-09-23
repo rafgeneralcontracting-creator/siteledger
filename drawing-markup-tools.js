@@ -197,6 +197,9 @@
     bind();const key=`${route.drawingId}:${q('sl_page_label')?.textContent||''}`;
     if(key!==loadingKey){loadingKey=key;active=false;q('sl_markup_session_bar')?.remove();document.body.classList.remove('sl-drawing-markup-active');await load().catch(console.error)}else render();
   }
-  new MutationObserver(()=>requestAnimationFrame(sync)).observe(document.getElementById('app'),{childList:true,subtree:true,attributes:true,attributeFilter:['style']});
-  window.addEventListener('resize',()=>requestAnimationFrame(render));sync();
+  window.addEventListener('sl:drawing-mounted',()=>requestAnimationFrame(sync));
+  window.addEventListener('sl:drawing-page',()=>requestAnimationFrame(sync));
+  window.addEventListener('sl:drawing-rendered',()=>requestAnimationFrame(render));
+  window.addEventListener('sl:drawing-unmounted',()=>{sheet=null;marks=[];previewMarks=null;loadingKey='';active=false;stroke=null;rawStroke=null;eraserPath=null;clearTimeout(shapeTimer)});
+  window.addEventListener('resize',()=>{if(route?.screen==='drawing')requestAnimationFrame(render)});sync();
 })();
