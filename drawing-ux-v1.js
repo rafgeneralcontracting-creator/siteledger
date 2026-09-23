@@ -26,7 +26,6 @@
     if(oldTip)oldTip.remove();
   }
 
-  const app=document.getElementById('app');
-  if(app)new MutationObserver(()=>requestAnimationFrame(patchToolbar)).observe(app,{childList:true,subtree:true});
+  window.addEventListener('sl:drawing-mounted',()=>requestAnimationFrame(patchToolbar));
   patchToolbar();
 })();
