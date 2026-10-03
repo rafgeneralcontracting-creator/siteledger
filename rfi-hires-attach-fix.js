@@ -23,13 +23,13 @@ function safeViewport(page){
 window.completeRfiPage=async function(){
   const canvas=document.getElementById('sl_pdf_canvas');
   if(!canvas||!route?.drawingId||!window.pdfjsLib)return oldComplete();
-  let backup=null,oldW=canvas.width,oldH=canvas.height,oldStyleW=canvas.style.width,oldStyleH=canvas.style.height;
+  let temporaryPdf=null,backup=null,oldW=canvas.width,oldH=canvas.height,oldStyleW=canvas.style.width,oldStyleH=canvas.style.height;
   try{
     backup=document.createElement('canvas');backup.width=oldW;backup.height=oldH;backup.getContext('2d').drawImage(canvas,0,0);
     const row=(await rest(`drawings?select=storage_path&id=eq.${route.drawingId}&limit=1`))[0];
     if(!row?.storage_path)return oldComplete();
     const pageNo=parseInt(document.getElementById('sl_page_label')?.textContent||'1',10)||1;
-    const pdf=await pdfjsLib.getDocument(await signDrawing(row.storage_path)).promise;
+    const ctx=window.siteLedgerDrawingContext?.();const pdf=ctx?.drawing?.id===route.drawingId?await siteLedgerDrawingPerformance.load(ctx.drawing,()=>signDrawing(row.storage_path)):(temporaryPdf=await pdfjsLib.getDocument(await signDrawing(row.storage_path)).promise);
     const page=await pdf.getPage(pageNo),vp=safeViewport(page);
     const hi=document.createElement('canvas');hi.width=Math.max(1,Math.ceil(vp.width));hi.height=Math.max(1,Math.ceil(vp.height));
     const hctx=hi.getContext('2d',{alpha:false});hctx.fillStyle='#fff';hctx.fillRect(0,0,hi.width,hi.height);
@@ -40,7 +40,9 @@ window.completeRfiPage=async function(){
     console.error('High-resolution RFI attachment fallback:',e);
     return await oldComplete();
   }finally{
+    if(temporaryPdf)await temporaryPdf.destroy();
     if(backup){canvas.width=oldW;canvas.height=oldH;canvas.style.width=oldStyleW;canvas.style.height=oldStyleH;canvas.getContext('2d').drawImage(backup,0,0)}
   }
 };
 })();
+

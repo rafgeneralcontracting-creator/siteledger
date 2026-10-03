@@ -8,7 +8,7 @@
     const stage=q('sl_canvas_stage'); if(!stage)return null;
     let c=q('sl_markup_layer');
     if(!c){c=document.createElement('canvas');c.id='sl_markup_layer';c.className='sl-drawing-markup-layer';stage.appendChild(c)}
-    const pdf=q('sl_pdf_canvas');
+    const pdf=q('sl_overlay')||q('sl_pdf_canvas');
     if(pdf && (c.width!==pdf.width||c.height!==pdf.height)){
       c.width=pdf.width;c.height=pdf.height;c.style.width=pdf.style.width;c.style.height=pdf.style.height;
     }else if(pdf){c.style.width=pdf.style.width;c.style.height=pdf.style.height}
@@ -54,6 +54,7 @@
 
   async function currentSheet(){
     if(!route?.drawingId)return null;
+    const ctx=window.siteLedgerDrawingContext?.();if(ctx?.drawing?.id===route.drawingId&&ctx.sheet)return ctx.sheet;
     const page=parseInt(q('sl_page_label')?.textContent||'1',10)||1;
     return (await rest(`drawing_sheets?select=*&drawing_id=eq.${route.drawingId}&page_number=eq.${page}&limit=1`))[0]||null;
   }

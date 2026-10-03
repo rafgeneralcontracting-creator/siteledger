@@ -11,5 +11,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Check JavaScript syntax
-        run: node --check app.js
+      - name: Validate app startup and drawing performance behavior
+        run: node tests/drawing-performance.test.cjs
+
