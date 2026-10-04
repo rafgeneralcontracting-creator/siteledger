@@ -11,3 +11,20 @@
  .sl-scroll-active .sl-scroll-sheet{margin-bottom:4px!important}
  .sl-scroll-active .sl-scroll-sheet-head{padding:2px 5px!important;min-height:20px!important;font-size:9px!important}
 }
+
+
+/* v4 professional continuous sheet stack */
+.sl-scroll-active .sl-scroll-list{margin:0 auto!important}
+.sl-scroll-active .sl-scroll-sheet{
+  margin:0 0 3px!important;
+  border-radius:0!important;
+  box-shadow:0 1px 2px rgba(16,24,40,.22)!important;
+}
+.sl-scroll-active .sl-scroll-sheet-head{
+  min-height:18px!important;
+  padding:1px 6px!important;
+  background:rgba(248,250,252,.95)!important;
+  font-size:9px!important;
+  border-bottom:1px solid #eaecf0!important;
+}
+.sl-scroll-active .sl-scroll-paper{background:#fff!important}
