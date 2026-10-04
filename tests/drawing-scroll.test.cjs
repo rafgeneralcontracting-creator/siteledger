@@ -67,7 +67,7 @@ async function browsing(){
   assert(h.rendered.length<8,'opening does not render the whole PDF');assert(h.canvases().length<=7);assert.equal(h.peak(),1,'phone rendering is serialized');
   assert(h.previewed.some(p=>p.sheet===1&&p.measurements[0].id==='measure1'),'current sheet uses its own saved takeoffs');
   assert(h.previewed.some(p=>p.stroke==='stroke2'),'nearby sheet renders only its own saved strokes');
-  assert.equal(h.sheets()[1].children[1].style.height,'667px','portrait pages use their actual proportions');
+  assert.equal(h.sheets()[1].children[1].style.height,Math.round(h.wrap.clientWidth*(1000/600))+'px','portrait pages use their actual proportions');
   const note=h.sheets()[1].querySelectorAll('.sl-scroll-pin')[0];assert.equal(note.textContent,'Note on 2');
   const select=h.doc.getElementById('sl_page_select');select.value='180';select.onchange();await h.settle();
   assert.equal(select.value,'180');assert(h.rendered.some(r=>r.n===180));assert(h.canvases().length<=7,'far jumps release old canvas buffers');assert(h.rendered.filter(r=>r.n>10&&r.n<170).length===0,'jumping skips intervening page rendering');
@@ -94,20 +94,20 @@ async function cancellation(){
 }
 async function zooming(){
   const h=harness();await h.mount();const paper=h.sheets()[0].children[1],old=h.canvases()[0],count=h.rendered.length;
-  h.ctx.changeDrawingZoom(1);await h.settle();assert.equal(paper.style.height,'560px');assert.equal(h.sheets()[1].children[1].style.height,'1333px');assert.equal(h.rendered.length,count,'zoom uses CSS immediately and defers PDF rendering');assert(old.parentNode,'existing canvas remains visible while zooming');
+  h.ctx.changeDrawingZoom(1);await h.settle();assert.equal(paper.style.height,Math.round(h.wrap.clientWidth*2*(700/1000))+'px');assert.equal(h.sheets()[1].children[1].style.height,Math.round(h.wrap.clientWidth*2*(1000/600))+'px');assert.equal(h.rendered.length,count,'zoom uses CSS immediately and defers PDF rendering');assert(old.parentNode,'existing canvas remains visible while zooming');
   h.hold(true);await h.runTimers();assert(old.parentNode,'existing canvas stays visible during sharpening');assert.equal(h.running(),1);h.hold(false);for(const r of h.rendered)if(!r.cancelled)r.resolve();await h.settle();
   assert(!old.parentNode,'completed sharp buffer replaces old canvas');assert.equal(old.width,0);
   const touches=(a,b)=>[{clientX:a,clientY:300},{clientX:b,clientY:300}];let prevented=false;const before=h.rendered.length;
   h.wrap.trigger('touchstart',{touches:touches(110,310)});h.wrap.trigger('touchmove',{touches:touches(10,410),preventDefault(){prevented=true}});await h.settle();
-  assert(prevented);assert.equal(paper.style.height,'1120px');assert.equal(h.wrap.scrollLeft,630,'pinch preserves the drawing point under the fingers');assert.equal(h.rendered.length,before,'no PDF rendering while fingers are moving');assert(h.ctx.siteLedgerDrawingScroll.active);assert.equal(h.selected.length,0,'pinching never requires page selection');
+  assert(prevented);assert.equal(paper.style.height,Math.round(h.wrap.clientWidth*4*(700/1000))+'px');assert.equal(h.wrap.scrollLeft,630,'pinch preserves the drawing point under the fingers');assert.equal(h.rendered.length,before,'no PDF rendering while fingers are moving');assert(h.ctx.siteLedgerDrawingScroll.active);assert.equal(h.selected.length,0,'pinching never requires page selection');
   h.wrap.trigger('touchend',{touches:[]});await h.runTimers();
   for(const r of h.rendered.filter(r=>r.canvas.width)){assert(r.canvas.width*r.canvas.height<=4000000);assert(Math.max(r.canvas.width,r.canvas.height)<=4096)}assert(h.canvases().length<=3,'zoomed pages use a smaller canvas cache');
   h.wrap.scrollTop=h.sheets()[19].offsetTop;h.wrap.trigger('scroll');await h.settle();assert.equal(h.doc.getElementById('sl_page_select').value,'20');
   await h.ctx.slFieldMarkup();await h.settle();assert.equal(h.toolCalls.at(-1).page,20);assert.equal(h.context.zoom,4,'tool receives the same zoom');
   h.ctx.siteLedgerDrawingMarkupPending=()=>true;await h.ctx.siteLedgerDrawingScroll.resume();assert(!h.ctx.siteLedgerDrawingScroll.active,'Done waits for markup saving');h.ctx.siteLedgerDrawingMarkupPending=()=>false;
-  await h.ctx.siteLedgerDrawingScroll.resume();await h.settle();assert(h.ctx.siteLedgerDrawingScroll.active);assert.equal(h.doc.getElementById('sl_page_select').value,'20');assert.equal(h.sheets()[19].children[1].style.height,'2667px','Done preserves zoom');
-  h.ctx.fitDrawing();await h.runTimers();assert.equal(h.sheets()[19].children[1].style.height,'667px');
-  h.wrap.trigger('wheel',{ctrlKey:true,deltaY:-1,clientX:200,clientY:200,preventDefault(){}});await h.runTimers();assert.equal(h.sheets()[19].children[1].style.height,'747px','trackpad zoom works directly');
+  await h.ctx.siteLedgerDrawingScroll.resume();await h.settle();assert(h.ctx.siteLedgerDrawingScroll.active);assert.equal(h.doc.getElementById('sl_page_select').value,'20');assert.equal(h.sheets()[19].children[1].style.height,Math.round(h.wrap.clientWidth*4*(1000/600))+'px','Done preserves zoom');
+  h.ctx.fitDrawing();await h.runTimers();assert.equal(h.sheets()[19].children[1].style.height,Math.round(h.wrap.clientWidth*(1000/600))+'px');
+  h.wrap.trigger('wheel',{ctrlKey:true,deltaY:-1,clientX:200,clientY:200,preventDefault(){}});await h.runTimers();assert.equal(h.sheets()[19].children[1].style.height,Math.round(h.wrap.clientWidth*1.12*(1000/600))+'px','trackpad zoom works directly');
   await h.ctx.siteLedgerDrawingScroll.destroy();await h.settle();assert.equal(h.wrap.handlers.get('touchmove').length,0);
   console.log('PASS direct pinch and wheel zoom, deferred sharpening, anchor preservation, correct-sheet tools and return zoom');
 }
