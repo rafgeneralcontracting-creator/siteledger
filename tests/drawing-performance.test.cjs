@@ -79,6 +79,9 @@ async function rendering(){
   wrap.handlers.touchmove({touches:[{clientX:50,clientY:120},{clientX:250,clientY:120}],preventDefault(){}});
   assert.equal(e.renders.length,pinchBefore);assert.equal(e.timers.size,0,'no raster work while pinching');
   wrap.handlers.touchend({touches:[]});await e.runTimers();assert.equal(e.renders.length,pinchBefore+1);
+  await c.selectDrawingPage(3,true);assert.equal(c.siteLedgerDrawingContext().sheet.id,'sheet3','page selector loads the selected sheet');
+  c.Date={now:()=>Date.now()+1000};c.startDrawingTool('count');const page3=e.elements.get('sl_overlay');page3.onclick({clientX:20,clientY:20});await c.finishDrawingTakeoff();
+  assert.equal(e.saved.at(-1).drawing_sheet_id,'sheet3','measurements are saved against the selected sheet');
   await c.go('drawings','project');await c.go('drawing','drawing');
   assert.equal(e.loads(),1,'reopening uses the parsed document');
   assert.equal(e.offlineReads(),1,'memory hit avoids another offline blob read');

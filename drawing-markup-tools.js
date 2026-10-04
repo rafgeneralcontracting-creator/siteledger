@@ -36,6 +36,7 @@
     ctx.lineWidth=Math.max(2,Number(m.stroke_width||(hi?18:3))*Math.max(.7,w/1200));
     smoothPath(ctx,pts,w,h);ctx.stroke();ctx.restore();
   }
+  window.siteLedgerRenderDrawingStroke=drawStroke;
   function drawEraser(ctx,w,h){
     if(!eraserPath?.length)return;
     const p=eraserPath.map(x=>px(x,w,h)),radius=Math.max(10,Math.min(22,w/95));

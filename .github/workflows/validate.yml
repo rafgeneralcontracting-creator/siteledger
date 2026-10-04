@@ -12,5 +12,7 @@ jobs:
         with:
           node-version: '22'
       - name: Validate app startup and drawing performance behavior
-        run: node tests/drawing-performance.test.cjs
+        run: |
+          node tests/drawing-performance.test.cjs
+          node tests/drawing-scroll.test.cjs
 
