@@ -119,4 +119,22 @@ async function markupTransition(){
   await h.ctx.siteLedgerDrawingScroll.destroy();await h.settle();
   console.log('PASS actual markup tool survives page transition and Done returns to browsing');
 }
-(async()=>{await browsing();await cancellation();await zooming();await markupTransition()})().catch(error=>{console.error(error);process.exitCode=1});
+async function markupGestures(){
+  const h=harness({pages:1});await h.mount();h.ctx.me={id:'tester'};const writes=[];let pendingSave=null;
+  const read=h.ctx.rest;h.ctx.rest=async(query,options)=>{if(options?.method){writes.push({query,options});if(pendingSave)await pendingSave;return [{id:'saved'+writes.length,...JSON.parse(options.body||'{}')}]};return read(query)};
+  vm.runInContext(fs.readFileSync(path.join(__dirname,'../drawing-markup-tools.js'),'utf8'),h.ctx);await h.settle();await h.ctx.slFieldMarkup();await h.settle();
+  const c=h.doc.getElementById('sl_markup_layer');c.style.width='400px';c.style.height='280px';c.getBoundingClientRect=()=>({left:0,top:0,width:400,height:280});
+  const event=(id,x,y,type='touch')=>({pointerId:id,clientX:x,clientY:y,pointerType:type,button:0,target:c,preventDefault(){}});
+  const move=(id,x,y)=>c.onpointermove(event(id,x,y)),down=(id,x,y)=>c.onpointerdown(event(id,x,y)),up=(id,x,y)=>c.onpointerup(event(id,x,y));
+  down(1,100,100);move(1,110,110);down(2,200,100);move(1,300,200);move(2,20,200);up(2,20,200);move(1,350,250);up(1,350,250);await h.settle();assert.equal(writes.length,0,'pinch discards tentative stroke and never saves either finger');assert(!h.ctx.siteLedgerDrawingMarkupPending());
+  down(1,100,100);move(1,120,120);h.wrap.trigger('touchstart',{touches:[{},{}]});c.onpointercancel(event(1,120,120));down(3,250,150);move(3,300,200);up(3,300,200);h.wrap.trigger('touchend',{touches:[{}]});down(4,220,150);move(4,280,200);up(4,280,200);h.wrap.trigger('touchend',{touches:[]});await h.settle();assert.equal(writes.length,0,'second finger outside canvas blocks drawing until all touches lift');
+  down(1,100,100);move(1,100.4,100.2);up(1,100.5,100.2);await h.settle();assert.equal(writes.length,0,'tap and tiny jitter leave no mark');
+  down(1,100,100);move(9,300,250);move(1,110,100);move(1,120,101);move(1,130,100);assert(h.frames.size<=1,'live strokes paint at most once per frame');up(1,140,100);await h.settle();assert.equal(writes.length,1);const pts=JSON.parse(writes[0].options.body).geometry.points;assert(pts.every(p=>p.x<=.35),'other pointer cannot corrupt stroke');assert(pts[1].x<.275&&pts[1].x>.25,'stroke samples filter jitter');assert.equal(pts.at(-1).x,.35,'endpoint follows release position');assert.equal(JSON.parse(writes[0].options.body).drawing_sheet_id,'sheet1');
+  let release;pendingSave=new Promise(resolve=>release=resolve);down(1,100,100);move(1,130,100);up(1,140,100);await flush();down(2,200,100);move(2,250,150);up(2,250,150);assert(h.ctx.siteLedgerDrawingMarkupPending());release();pendingSave=null;await h.settle();assert.equal(writes.length,2,'saving stroke cannot be replaced by another pointer');
+  h.ctx.setDrawingMarkupTool('highlight');down(1,100,100);move(1,160,100);up(1,180,100);await h.settle();assert.equal(JSON.parse(writes.at(-1).options.body).markup_type,'highlight');
+  h.ctx.setDrawingMarkupTool('eraser');down(1,100,100);down(2,200,100);up(1,100,100);up(2,200,100);await h.settle();assert(writes.every(w=>w.options.method==='POST'),'pinching with eraser does not delete marks');
+  await h.ctx.doneDrawingMarkup();await h.settle();assert(h.ctx.siteLedgerDrawingScroll.active);
+  await h.ctx.siteLedgerDrawingScroll.destroy();
+  console.log('PASS markup pinch rejection, outside-canvas gestures, pointer isolation, jitter filtering, saving and highlighter/eraser guards');
+}
+(async()=>{await browsing();await cancellation();await zooming();await markupTransition();await markupGestures()})().catch(error=>{console.error(error);process.exitCode=1});
