@@ -28,3 +28,128 @@ body.sl-workspace-active{overflow:hidden;background:#475467}body.sl-workspace-ac
  .sl-workspace-active .sl-toolbtn,.sl-workspace-active .sl-zoomlabel{height:28px!important;min-width:28px!important;padding:0 6px!important}
  .sl-workspace-active .sl-field-btn{height:30px!important;min-height:30px!important;font-size:11px!important}
 }
+
+
+/* v4 professional drawing viewer: full-canvas with floating chrome */
+body.sl-workspace-active{background:#343a46}
+body.sl-workspace-active .sl-workspace-page{
+  background:#343a46!important;
+  padding:0!important;
+}
+.sl-workspace-active .sl-canvas-wrap{
+  position:fixed!important;
+  top:calc(env(safe-area-inset-top) + 34px)!important;
+  right:0!important;
+  bottom:0!important;
+  left:0!important;
+  z-index:1!important;
+  border-radius:0!important;
+  padding:0!important;
+  margin:0!important;
+  background:#3f4653!important;
+}
+.sl-workspace-active .sl-viewer-head{
+  position:fixed!important;
+  top:env(safe-area-inset-top)!important;
+  left:0!important;
+  right:0!important;
+  z-index:40!important;
+  height:34px!important;
+  min-height:34px!important;
+  padding:2px 6px!important;
+  margin:0!important;
+  gap:5px!important;
+  background:rgba(248,250,252,.92)!important;
+  border-bottom:1px solid rgba(16,24,40,.08);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+.sl-workspace-active .sl-viewer-head>.btn{
+  height:28px!important;
+  min-height:28px!important;
+  padding:0 8px!important;
+  border-radius:8px!important;
+  font-size:11px!important;
+}
+.sl-workspace-active .sl-view-title .title{
+  font-size:12px!important;
+  line-height:1!important;
+  font-weight:800!important;
+}
+.sl-workspace-active .sl-workspace-actions{gap:4px!important}
+.sl-workspace-active .sl-workspace-takeoffs{
+  height:28px!important;
+  padding:0 8px!important;
+  border-radius:8px!important;
+  font-size:10px!important;
+  background:rgba(255,255,255,.92)!important;
+}
+.sl-workspace-active .sl-viewbar{
+  position:fixed!important;
+  top:calc(env(safe-area-inset-top) + 40px)!important;
+  left:50%!important;
+  transform:translateX(-50%)!important;
+  z-index:35!important;
+  width:max-content!important;
+  max-width:calc(100vw - 12px)!important;
+  min-height:34px!important;
+  height:34px!important;
+  padding:3px 5px!important;
+  gap:4px!important;
+  border:1px solid rgba(152,162,179,.55)!important;
+  border-radius:11px!important;
+  background:rgba(255,255,255,.91)!important;
+  box-shadow:0 4px 16px rgba(16,24,40,.18)!important;
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+.sl-workspace-active .sl-viewbar .sl-toolbtn,
+.sl-workspace-active .sl-viewbar .sl-zoomlabel,
+.sl-workspace-active .sl-viewbar .sl-page-select,
+.sl-workspace-active .sl-viewbar .sl-drawing-done{
+  height:28px!important;
+  min-height:28px!important;
+  border-radius:7px!important;
+  font-size:10px!important;
+}
+.sl-workspace-active .sl-viewbar .sl-page-select{max-width:116px!important;padding:0 6px!important}
+.sl-workspace-active .sl-viewbar .sl-zoomlabel{min-width:44px!important}
+.sl-workspace-active .sl-takeoffbar{
+  position:fixed!important;
+  left:50%!important;
+  bottom:max(8px,env(safe-area-inset-bottom))!important;
+  transform:translateX(-50%)!important;
+  z-index:35!important;
+  width:auto!important;
+  max-width:calc(100vw - 12px)!important;
+  padding:4px!important;
+  margin:0!important;
+  border:1px solid rgba(152,162,179,.55)!important;
+  border-radius:12px!important;
+  background:rgba(255,255,255,.92)!important;
+  box-shadow:0 5px 18px rgba(16,24,40,.2)!important;
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  overflow:visible!important;
+}
+.sl-workspace-active .sl-tool-actions{
+  position:fixed!important;
+  left:50%!important;
+  bottom:calc(max(8px,env(safe-area-inset-bottom)) + 50px)!important;
+  transform:translateX(-50%)!important;
+  z-index:34!important;
+  width:max-content!important;
+  max-width:calc(100vw - 16px)!important;
+  border-radius:10px!important;
+  padding:4px 6px!important;
+  background:rgba(255,255,255,.93)!important;
+  box-shadow:0 3px 12px rgba(16,24,40,.14)!important;
+}
+.sl-workspace-active .sl-tool-actions:empty{display:none!important}
+.sl-workspace-active .sl-scale-status,.sl-workspace-active .sl-colorbar{display:none!important}
+@media(max-width:640px){
+  .sl-workspace-active .sl-view-title .small{display:none!important}
+  .sl-workspace-active .sl-workspace-icon{display:none!important}
+  .sl-workspace-active .sl-canvas-wrap{top:calc(env(safe-area-inset-top) + 33px)!important}
+  .sl-workspace-active .sl-viewbar{top:calc(env(safe-area-inset-top) + 38px)!important}
+}
