@@ -12,3 +12,41 @@
  .sl-workspace-active .sl-markup-tool,.sl-workspace-active .sl-markup-done{height:26px!important;padding:0 6px!important;font-size:9px!important}
  .sl-workspace-active .sl-markup-color{width:18px!important;height:18px!important;min-width:18px!important}
 }
+
+
+/* v3 professional contextual markup palette */
+.sl-workspace-active .sl-markup-session-bar{
+  position:fixed!important;
+  left:6px!important;
+  right:6px!important;
+  bottom:calc(max(8px,env(safe-area-inset-bottom)) + 50px)!important;
+  z-index:45!important;
+  width:auto!important;
+  height:38px!important;
+  min-height:38px!important;
+  padding:4px!important;
+  margin:0!important;
+  gap:3px!important;
+  border:1px solid rgba(152,162,179,.6)!important;
+  border-radius:11px!important;
+  background:rgba(255,255,255,.94)!important;
+  box-shadow:0 5px 18px rgba(16,24,40,.22)!important;
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+}
+.sl-drawing-markup-active .sl-takeoffbar{display:none!important}
+.sl-workspace-active .sl-markup-tool,.sl-workspace-active .sl-markup-done{
+  height:29px!important;
+  padding:0 7px!important;
+  border-radius:7px!important;
+  font-size:10px!important;
+}
+.sl-workspace-active .sl-markup-color{
+  width:20px!important;
+  height:20px!important;
+  min-width:20px!important;
+}
+@media(max-width:640px){
+ .sl-workspace-active .sl-markup-session-bar strong{display:none!important}
+ .sl-workspace-active .sl-markup-session-bar{overflow-x:auto!important;overflow-y:hidden!important}
+}
