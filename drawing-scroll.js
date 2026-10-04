@@ -35,9 +35,9 @@
   }
   function create(pdf,drawing){
     const wrap=q('sl_canvas_wrap'),stage=q('sl_canvas_stage');
-    const state={pdf,drawing,wrap,stage,rows:[],active:false,current:1,wanted:new Set(),generation:0,running:0,frame:null,switching:false,transition:0,select:null,button:null};
-    function valid(row,generation){return controller===state&&state.active&&state.generation===generation&&state.wanted.has(row.n)}
-    function label(){if(state.select)state.select.value=String(state.current)}
+    const state={pdf,drawing,wrap,stage,rows:[],active:false,current:1,wanted:new Set(),generation:0,running:0,frame:null,switching:false,transition:0,select:null,button:null,zoom:1,baseWidth:400,zoomTimer:null,pinch:null,gesturing:false,editing:false};
+    function valid(row,generation,token){return controller===state&&state.active&&state.generation===generation&&state.wanted.has(row.n)&&(token===undefined||row.token===token)}
+    function label(){if(state.select)state.select.value=String(state.current);if(state.active&&q('sl_zoom_label'))q('sl_zoom_label').textContent=state.zoom===1?'Fit':Math.round(state.zoom*100)+'%'}
     function release(row){
       row.cancelRender?.();row.task?.cancel();
       if(row.canvas){row.canvas.width=row.canvas.height=0;row.canvas.remove();row.canvas=null}
@@ -45,7 +45,7 @@
       if(!row.error)row.status.textContent='';
     }
     function raster(width,ratio){
-      const maxPixels=isMobile()?1500000:2500000,scale=Math.min(2,window.devicePixelRatio||1,Math.sqrt(maxPixels/Math.max(1,width*width*ratio)),4096/Math.max(width,width*ratio));
+      const maxPixels=state.zoom>1?(isMobile()?4000000:8000000):(isMobile()?1500000:2500000),scale=Math.min(2,window.devicePixelRatio||1,Math.sqrt(maxPixels/Math.max(1,width*width*ratio)),4096/Math.max(width,width*ratio));
       return {width:Math.max(1,Math.floor(width*scale)),height:Math.max(1,Math.floor(width*ratio*scale))};
     }
     function size(row,ratio){
@@ -56,38 +56,42 @@
       schedule();
     }
     async function render(row,seed=null){
-      row.loading=true;state.running++;const generation=state.generation;let cancel;const cancelled=new Promise(resolve=>{cancel=()=>resolve(null)});row.cancelRender=cancel;
+      row.loading=true;state.running++;const generation=state.generation,token=row.token=(row.token||0)+1;let cancel,buffer=null;
+      const cancelled=new Promise(resolve=>{cancel=()=>resolve(null)});row.cancelRender=cancel;
       const metadata=pageData(drawing,row.n).then(value=>({value}),error=>({error}));
-      row.status.textContent='Loading page…';
+      if(!row.canvas)row.status.textContent='Loading page…';
       try{
-        const page=await Promise.race([pdf.getPage(row.n),cancelled]);if(!page||!valid(row,generation))return;
+        const page=await Promise.race([pdf.getPage(row.n),cancelled]);if(!page||!valid(row,generation,token))return;
         const base=page.getViewport({scale:1});size(row,base.height/base.width);
-        const pixels=raster(row.width,row.ratio),canvas=document.createElement('canvas');canvas.className='sl-scroll-canvas';canvas.setAttribute('aria-label','Drawing page '+row.n);
-        canvas.width=pixels.width;canvas.height=pixels.height;row.canvas=canvas;row.paper.prepend(canvas);
+        const width=row.width,pixels=raster(width,row.ratio),canvas=document.createElement('canvas');buffer=canvas;canvas.className='sl-scroll-canvas';canvas.setAttribute('aria-label','Drawing page '+row.n);
+        canvas.width=pixels.width;canvas.height=pixels.height;
         const ctx=canvas.getContext('2d',{alpha:false});
-        if(seed&&seed.width)ctx.drawImage(seed,0,0,canvas.width,canvas.height);
+        if(seed&&seed.width&&state.zoom===1)ctx.drawImage(seed,0,0,canvas.width,canvas.height);
         else{
           const task=page.render({canvasContext:ctx,viewport:page.getViewport({scale:pixels.width/base.width})});row.task=task;
           try{await task.promise}finally{if(row.task===task)row.task=null}
         }
-        if(!valid(row,generation))return;
-        const result=await Promise.race([metadata,cancelled]);if(!result||!valid(row,generation))return;
+        if(!valid(row,generation,token))return;
+        const result=await Promise.race([metadata,cancelled]);if(!result||!valid(row,generation,token))return;
+        row.paper.querySelectorAll('.sl-scroll-pin').forEach(pin=>pin.remove());
         if(result.value){preview(ctx,result.value,canvas.width,canvas.height,row.paper);row.status.textContent=''}
-        else row.status.textContent='Markup preview unavailable. Open this page to review.';
-        row.rendered=true;row.error=false;
+        else row.status.textContent='Markup preview unavailable. Try the Markup tool to review.';
+        if(row.canvas){row.canvas.width=row.canvas.height=0;row.canvas.remove()}
+        row.canvas=canvas;row.paper.prepend(canvas);buffer=null;row.rendered=true;row.renderWidth=width;row.error=false;
       }catch(error){
-        if(valid(row,generation)&&error?.name!=='RenderingCancelledException'){
-          row.error=true;release(row);row.status.textContent='Could not load this page. ';const retry=document.createElement('button');retry.className='sl-scroll-retry';retry.textContent='Retry';retry.onclick=e=>{e.stopPropagation();row.error=false;pump()};row.status.appendChild(retry);
+        if(valid(row,generation,token)&&error?.name!=='RenderingCancelledException'){
+          row.error=true;row.status.textContent='Could not load this page. ';const retry=document.createElement('button');retry.className='sl-scroll-retry';retry.textContent='Retry';retry.onclick=e=>{e.stopPropagation();row.error=false;pump()};row.status.appendChild(retry);
         }
       }finally{
+        if(buffer)buffer.width=buffer.height=0;
         if(!valid(row,generation))release(row);
         row.cancelRender=null;row.loading=false;state.running--;pump();
       }
     }
     function pump(){
-      if(!state.active||state.switching)return;
+      if(!state.active||state.switching||state.gesturing||state.zoomTimer!==null)return;
       const limit=isMobile()?1:2;
-      const pending=state.rows.filter(row=>state.wanted.has(row.n)&&!row.loading&&!row.rendered&&!row.error).sort((a,b)=>Math.abs(a.n-state.current)-Math.abs(b.n-state.current));
+      const pending=state.rows.filter(row=>state.wanted.has(row.n)&&!row.loading&&(!row.rendered||row.renderWidth!==row.width)&&!row.error).sort((a,b)=>Math.abs(a.n-state.current)-Math.abs(b.n-state.current));
       for(const row of pending){if(state.running>=limit)break;const current=window.siteLedgerDrawingContext?.(),seed=current?.drawing?.id===drawing.id&&current.page===row.n&&current.sheet?q('sl_pdf_canvas'):null;render(row,seed).catch(console.error)}
     }
     function find(y){
@@ -99,13 +103,13 @@
       const first=find(wrap.scrollTop),last=find(wrap.scrollTop+wrap.clientHeight),current=find(wrap.scrollTop+wrap.clientHeight*.4);
       state.current=current+1;label();
       const nearby=[];for(let n=Math.max(1,first);n<=Math.min(pdf.numPages,last+2);n++)nearby.push(n);
-      state.wanted=new Set(nearby.sort((a,b)=>Math.abs(a-state.current)-Math.abs(b-state.current)).slice(0,isMobile()?7:9));
+      state.wanted=new Set(nearby.sort((a,b)=>Math.abs(a-state.current)-Math.abs(b-state.current)).slice(0,state.zoom>1?(isMobile()?3:5):(isMobile()?7:9)));
       for(const row of state.rows)if(!state.wanted.has(row.n)&&(row.canvas||row.task))release(row);
       pump();
     }
     function schedule(){if(state.frame!==null)return;state.frame=requestAnimationFrame(()=>{state.frame=null;update()})}
     async function stop(){
-      state.active=false;state.generation++;
+      state.active=false;state.generation++;state.pinch=null;state.gesturing=false;clearTimeout(state.zoomTimer);state.zoomTimer=null;
       if(state.frame!==null)cancelAnimationFrame(state.frame);state.frame=null;
       const pending=[];for(const row of state.rows){row.cancelRender?.();if(row.task){row.task.cancel();pending.push(row.task.promise.catch(()=>{}))}}
       await Promise.all(pending);
@@ -113,36 +117,68 @@
       state.list?.remove();state.rows=[];state.wanted.clear();state.list=null;
       document.body.classList.remove('sl-scroll-active');stage.style.display='';
     }
-    async function start(n=1){
+    async function start(n=1,anchor=null){
       if(!canSwitch())return false;
       const transition=++state.transition;await stop();if(controller!==state||transition!==state.transition||!q('sl_canvas_wrap'))return false;
-      state.active=true;state.current=n;state.generation++;window.cancelDrawingTool?.();window.closeTakeoffDrawer?.();
+      state.active=true;state.editing=false;document.body.classList.remove('sl-editing-drawing');state.current=n;state.generation++;window.cancelDrawingTool?.();window.closeTakeoffDrawer?.();
       stage.style.display='none';document.body.classList.add('sl-scroll-active');
       const list=document.createElement('div');list.className='sl-scroll-list';state.list=list;wrap.appendChild(list);
-      const width=Math.max(80,Math.min(1400,wrap.clientWidth-20)),context=window.siteLedgerDrawingContext?.(),ratio=context?.viewport?context.viewport.height/context.viewport.width:.7;
-      list.style.width=width+'px';const fragment=document.createDocumentFragment();
+      const baseWidth=Math.max(80,Math.min(1400,wrap.clientWidth-20)),width=baseWidth*state.zoom,context=window.siteLedgerDrawingContext?.(),ratio=context?.viewport?context.viewport.height/context.viewport.width:.7;
+      state.baseWidth=baseWidth;list.style.width=width+'px';const fragment=document.createDocumentFragment();
       for(let page=1;page<=pdf.numPages;page++){
         const card=document.createElement('article');card.className='sl-scroll-sheet';card.dataset.page=String(page);
         const header=document.createElement('div');header.className='sl-scroll-sheet-head';
         const number=document.createElement('b');number.textContent='Page '+page;
-        const button=document.createElement('button');button.className='sl-scroll-open';button.textContent='Open page';button.setAttribute('aria-label','Open page '+page+' to zoom, measure or mark up');button.onclick=()=>state.single(page);
-        header.append(number,button);
-        const paper=document.createElement('div');paper.className='sl-scroll-paper';paper.setAttribute('role','button');paper.setAttribute('aria-label','Open drawing page '+page);paper.tabIndex=0;paper.onclick=()=>state.single(page);paper.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();state.single(page)}};
+        header.appendChild(number);
+        const paper=document.createElement('div');paper.className='sl-scroll-paper';paper.setAttribute('aria-label','Drawing page '+page);paper.tabIndex=0;
         const status=document.createElement('span');status.className='sl-scroll-page-status';paper.appendChild(status);card.append(header,paper);fragment.appendChild(card);
         const row={n:page,card,paper,status,width,ratio,loading:false,rendered:false,error:false,task:null,canvas:null};paper.style.height=Math.max(40,Math.round(width*ratio))+'px';state.rows.push(row);
       }
-      list.appendChild(fragment);wrap.scrollTop=Math.max(0,state.rows[n-1].card.offsetTop);wrap.scrollLeft=0;state.button.textContent='Single page';label();
+      list.appendChild(fragment);wrap.scrollTop=Math.max(0,state.rows[n-1].card.offsetTop);wrap.scrollLeft=0;if(anchor)restorePoint(anchor);label();
       update();return true;
     }
+    function pointAnchor(x=wrap.clientWidth/2,y=wrap.clientHeight/2){
+      const row=state.rows[find(wrap.scrollTop+y)];if(!row)return null;
+      return {n:row.n,x:(wrap.scrollLeft+x)/Math.max(1,row.width),y:(wrap.scrollTop+y-row.card.offsetTop-row.card.children[0].offsetHeight)/Math.max(1,row.paper.offsetHeight),px:x,py:y};
+    }
+    function restorePoint(anchor){const row=state.rows[anchor.n-1];if(!row)return;wrap.scrollLeft=Math.max(0,anchor.x*row.width-anchor.px);wrap.scrollTop=Math.max(0,row.card.offsetTop+row.card.children[0].offsetHeight+anchor.y*row.paper.offsetHeight-anchor.py)}
+    function cancelRenders(){for(const row of state.rows){if(row.loading){row.token=(row.token||0)+1;row.cancelRender?.();row.task?.cancel()}}}
+    function sharp(){clearTimeout(state.zoomTimer);state.zoomTimer=setTimeout(()=>{state.zoomTimer=null;update()},220)}
+    state.setZoom=(zoom,anchor=pointAnchor(),sharpen=true)=>{
+      if(!state.active||!anchor)return;state.zoom=Math.max(.5,Math.min(6,Math.round(zoom*1000)/1000));
+      cancelRenders();state.list.style.width=state.baseWidth*state.zoom+'px';
+      for(const row of state.rows){row.width=state.baseWidth*state.zoom;row.paper.style.height=Math.max(40,Math.round(row.width*row.ratio))+'px'}
+      restorePoint(anchor);label();if(sharpen)sharp();schedule();
+    };
     state.single=async n=>{
-      if(state.switching||!canSwitch())return;
+      if(state.switching||!canSwitch())return false;
       state.switching=true;state.transition++;n=Math.max(1,Math.min(pdf.numPages,Number(n)||state.current));
+      const anchor=state.active?pointAnchor():null;
       try{
-        await stop();if(controller!==state)return;
-        wrap.scrollTop=wrap.scrollLeft=0;state.current=n;state.button.textContent='Scroll pages';label();
-        await window.selectDrawingPage(n,true);
+        await stop();if(controller!==state)return false;
+        state.editing=true;document.body.classList.add('sl-editing-drawing');wrap.scrollTop=wrap.scrollLeft=0;state.current=n;label();
+        const ready=await window.selectDrawingPage(n,true);if(ready===false)return false;
+        window.setDrawingViewZoom?.(state.zoom);
+        if(anchor&&anchor.n===n){const canvas=q('sl_pdf_canvas');if(canvas){wrap.scrollLeft=Math.max(0,anchor.x*parseFloat(canvas.style.width)-anchor.px);wrap.scrollTop=Math.max(0,anchor.y*parseFloat(canvas.style.height)-anchor.py)}}
+        return true;
       }finally{state.switching=false}
     };
+    state.done=async()=>{
+      if(state.active||state.switching)return;
+      let context=window.siteLedgerDrawingContext?.();
+      if(context?.hasDraft){if(['area','perimeter','count'].includes(context.mode))await window.finishDrawingTakeoff?.();else{alert('Finish or cancel your measurement before pressing Done.');return}context=window.siteLedgerDrawingContext?.();if(context?.hasDraft)return}
+      if(q('sl_rfi_session_bar')){alert('Complete or cancel the RFI markup before pressing Done.');return}
+      if(window.siteLedgerDrawingMarkupPending?.()){alert('Wait for your markup to finish saving, then press Done.');return}
+      const canvas=q('sl_pdf_canvas'),anchor=canvas?{n:context.page,x:(wrap.scrollLeft+wrap.clientWidth/2)/Math.max(1,parseFloat(canvas.style.width)),y:(wrap.scrollTop+wrap.clientHeight/2)/Math.max(1,parseFloat(canvas.style.height)),px:wrap.clientWidth/2,py:wrap.clientHeight/2}:null;
+      state.zoom=context.zoom||state.zoom;window.finishDrawingMarkup?.();window.cancelDrawingTool?.();
+      await start(context.page,anchor);
+    };
+    function localMid(touches){const rect=wrap.getBoundingClientRect();return {x:(touches[0].clientX+touches[1].clientX)/2-rect.left,y:(touches[0].clientY+touches[1].clientY)/2-rect.top}}
+    const distance=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+    function touchStart(event){if(!state.active||event.touches.length!==2)return;const mid=localMid(event.touches);state.gesturing=true;clearTimeout(state.zoomTimer);state.zoomTimer=null;cancelRenders();state.pinch={distance:distance(event.touches),zoom:state.zoom,anchor:pointAnchor(mid.x,mid.y)}}
+    function touchMove(event){if(!state.active||!state.pinch||event.touches.length!==2)return;event.preventDefault();const mid=localMid(event.touches),anchor={...state.pinch.anchor,px:mid.x,py:mid.y};state.setZoom(state.pinch.zoom*distance(event.touches)/Math.max(1,state.pinch.distance),anchor,false)}
+    function touchEnd(event){if(state.pinch&&event.touches.length<2){state.pinch=null;state.gesturing=false;sharp()}}
+    function wheel(event){if(!state.active||(!event.ctrlKey&&!event.metaKey))return;event.preventDefault();const rect=wrap.getBoundingClientRect();state.setZoom(state.zoom*(event.deltaY<0?1.12:.89),pointAnchor(event.clientX-rect.left,event.clientY-rect.top))}
     state.jump=n=>{
       n=Math.max(1,Math.min(pdf.numPages,Number(n)||1));
       if(state.active){state.current=n;wrap.scrollTop=state.rows[n-1].card.offsetTop;label();update()}
@@ -153,11 +189,11 @@
       label.style.display='none';const select=document.createElement('select');select.id='sl_page_select';select.className='sl-page-select';select.setAttribute('aria-label','Jump to drawing page');
       for(let n=1;n<=pdf.numPages;n++){const option=document.createElement('option');option.value=String(n);option.textContent=`Page ${n} of ${pdf.numPages}`;select.appendChild(option)}
       select.onchange=()=>state.jump(select.value);parent.insertBefore(select,label);state.select=select;
-      if(pdf.numPages>1){const button=document.createElement('button');button.id='sl_drawing_view_mode';button.className='sl-view-mode';button.textContent='Scroll pages';button.onclick=()=>{if(state.active)state.single(state.current);else if(!state.switching)start(window.siteLedgerDrawingContext?.().page||1).catch(console.error)};q('sl_page_label').closest('.sl-viewbar')?.appendChild(button);state.button=button}
-      wrap.addEventListener('scroll',schedule,{passive:true});
+      const button=document.createElement('button');button.id='sl_drawing_done';button.className='sl-drawing-done';button.textContent='Done';button.onclick=()=>state.done().catch(console.error);q('sl_page_label').closest('.sl-viewbar')?.appendChild(button);state.button=button;
+      wrap.addEventListener('scroll',schedule,{passive:true});wrap.addEventListener('wheel',wheel,{passive:false});wrap.addEventListener('touchstart',touchStart,{passive:true});wrap.addEventListener('touchmove',touchMove,{passive:false});wrap.addEventListener('touchend',touchEnd,{passive:true});wrap.addEventListener('touchcancel',touchEnd,{passive:true});
     };
-    state.start=start;state.stop=stop;state.resize=()=>{if(state.active&&!state.switching)start(state.current).catch(console.error)};
-    state.destroy=async()=>{state.transition++;wrap.removeEventListener('scroll',schedule);await stop()};
+    state.start=start;state.stop=stop;state.resize=()=>{if(state.active&&!state.switching)start(state.current,pointAnchor()).catch(console.error)};
+    state.destroy=async()=>{state.transition++;wrap.removeEventListener('scroll',schedule);wrap.removeEventListener('wheel',wheel);wrap.removeEventListener('touchstart',touchStart);wrap.removeEventListener('touchmove',touchMove);wrap.removeEventListener('touchend',touchEnd);wrap.removeEventListener('touchcancel',touchEnd);document.body.classList.remove('sl-editing-drawing');await stop()};
     return state;
   }
   const previous=window.prevDrawingPage,next=window.nextDrawingPage;
@@ -169,10 +205,16 @@
       if(controller)await controller.destroy();const state=create(pdf,drawing);controller=state;state.install();
       // Workspace sizing and existing tool initialization run before the browsing view.
       await new Promise(resolve=>requestAnimationFrame(resolve));if(controller!==state||route?.screen!=='drawing'||route.drawingId!==drawing.id)return;
-      if(pdf.numPages>1)await state.start(1);
+      await state.start(1);
     },
+    async edit(){return controller?.active?controller.single(controller.current):true},
+    async resume(){if(controller)await controller.done()},
     async destroy(){const state=controller;controller=null;if(state)await state.destroy()}
   };
+  const originalZoom=window.changeDrawingZoom,originalFit=window.fitDrawing;
+  window.changeDrawingZoom=delta=>controller?.active?controller.setZoom(controller.zoom+delta):originalZoom(delta);
+  window.fitDrawing=()=>controller?.active?controller.setZoom(1):originalFit();
+  for(const name of ['slFieldMarkup','slFieldRfi','slFieldMeasureMenu']){const action=window[name];if(action)window[name]=async function(){if(await window.siteLedgerDrawingScroll.edit())return action.apply(this,arguments)}}
   window.addEventListener('sl:drawing-page',()=>{if(controller&&!controller.active){controller.current=window.siteLedgerDrawingContext?.().page||1;if(controller.select)controller.select.value=String(controller.current)}});
   let resizeTimer;window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>controller?.resize(),180)});
 })();

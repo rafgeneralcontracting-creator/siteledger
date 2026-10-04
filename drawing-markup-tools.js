@@ -61,7 +61,8 @@
   }
   async function load(){
     const s=await currentSheet();if(!s)return;
-    sheet=s;marks=await rest(`drawing_markups?select=*&drawing_sheet_id=eq.${s.id}&markup_type=in.(freehand,highlight)&order=created_at.asc`);
+    const loaded=await rest(`drawing_markups?select=*&drawing_sheet_id=eq.${s.id}&markup_type=in.(freehand,highlight)&order=created_at.asc`);
+    if(window.siteLedgerDrawingContext?.().sheet?.id!==s.id)return;sheet=s;marks=loaded;
     previewMarks=null;render();
   }
 
@@ -75,18 +76,20 @@
       '<button class="sl-markup-tool" onclick="drawingMarkupNote()">T Note</button>'+
       '<span class="sl-markup-colors">'+palette.map(c=>`<button class="sl-markup-color ${c===color?'active':''}" style="--mc:${c}" onclick="setDrawingMarkupColor('${c}')" aria-label="Markup color"></button>`).join('')+'</span>'+
       `<button class="sl-markup-tool" onclick="undoDrawingMarkup()" ${!marks.length?'disabled':''}>Undo</button>`+
-      '<button class="sl-markup-done" onclick="finishDrawingMarkup()">Done</button>';
+      '<button class="sl-markup-done" onclick="doneDrawingMarkup()">Done</button>';
   }
 
   window.startDrawingMarkup=async function(which='pen'){
-    try{window.cancelRfiMarkup?.();window.cancelDrawingTool?.();if(!sheet)await load();if(!sheet)return alert('Drawing sheet is still loading.');
+    try{window.cancelRfiMarkup?.();window.cancelDrawingTool?.();loadingKey=`${route.drawingId}:${q('sl_page_label')?.textContent||''}`;await load();if(!sheet)return alert('Drawing sheet is still loading.');
       active=true;tool=which;stroke=null;rawStroke=null;eraserPath=null;previewMarks=null;toolbar();render();document.body.classList.add('sl-drawing-markup-active');
     }catch(e){alert(e?.message||'Could not start markup.')}
   };
   window.setDrawingMarkupTool=function(t){tool=t;stroke=null;rawStroke=null;eraserPath=null;previewMarks=null;clearTimeout(shapeTimer);toolbar();render()};
   window.setDrawingMarkupColor=function(c){color=c;toolbar();render()};
   window.drawingMarkupNote=function(){window.finishDrawingMarkup();window.startDrawingAnnotation?.('note')};
-  window.finishDrawingMarkup=function(){active=false;stroke=null;rawStroke=null;eraserPath=null;previewMarks=null;clearTimeout(shapeTimer);q('sl_markup_session_bar')?.remove();document.body.classList.remove('sl-drawing-markup-active');render();document.getElementById('sl_field_pan')?.click()};
+  window.finishDrawingMarkup=function(){active=false;stroke=null;rawStroke=null;eraserPath=null;previewMarks=null;clearTimeout(shapeTimer);q('sl_markup_session_bar')?.remove();document.body.classList.remove('sl-drawing-markup-active');render();document.querySelectorAll('.sl-field-btn').forEach(button=>button.classList.toggle('active',button.id==='sl_field_pan'))};
+  window.siteLedgerDrawingMarkupPending=()=>saving||!!stroke||!!eraserPath;
+  window.doneDrawingMarkup=async()=>{if(window.siteLedgerDrawingMarkupPending()){alert('Wait for your markup to finish saving, then press Done.');return}window.finishDrawingMarkup();await window.siteLedgerDrawingScroll?.resume()};
   window.cancelDrawingMarkup=window.finishDrawingMarkup;
   window.undoDrawingMarkup=async function(){const m=marks[marks.length-1];if(!m)return;if(!confirm('Remove the last drawing markup?'))return;await rest(`drawing_markups?id=eq.${m.id}`,{method:'DELETE'});marks.pop();toolbar();render()};
 
