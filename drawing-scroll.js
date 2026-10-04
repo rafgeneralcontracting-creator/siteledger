@@ -35,7 +35,7 @@
   }
   function create(pdf,drawing){
     const wrap=q('sl_canvas_wrap'),stage=q('sl_canvas_stage');
-    const state={pdf,drawing,wrap,stage,rows:[],active:false,current:1,wanted:new Set(),generation:0,running:0,frame:null,switching:false,transition:0,select:null,button:null,zoom:1,baseWidth:400,zoomTimer:null,pinch:null,gesturing:false,editing:false};
+    const state={pdf,drawing,wrap,stage,rows:[],active:false,current:1,wanted:new Set(),generation:0,running:0,frame:null,switching:false,transition:0,select:null,button:null,zoom:1,baseWidth:400,zoomTimer:null,pinch:null,gesturing:false,editing:false,lastZoomPage:1};
     function valid(row,generation,token){return controller===state&&state.active&&state.generation===generation&&state.wanted.has(row.n)&&(token===undefined||row.token===token)}
     function label(){if(state.select)state.select.value=String(state.current);if(state.active&&q('sl_zoom_label'))q('sl_zoom_label').textContent=state.zoom===1?'Fit':Math.round(state.zoom*100)+'%'}
     function release(row){
@@ -123,7 +123,7 @@
       state.active=true;state.editing=false;document.body.classList.remove('sl-editing-drawing');state.current=n;state.generation++;window.cancelDrawingTool?.();window.closeTakeoffDrawer?.();
       stage.style.display='none';document.body.classList.add('sl-scroll-active');
       const list=document.createElement('div');list.className='sl-scroll-list';state.list=list;wrap.appendChild(list);
-      const baseWidth=Math.max(80,Math.min(1400,wrap.clientWidth-20)),width=baseWidth*state.zoom,context=window.siteLedgerDrawingContext?.(),ratio=context?.viewport?context.viewport.height/context.viewport.width:.7;
+      const baseWidth=Math.max(80,Math.min(1400,wrap.clientWidth)),width=baseWidth*state.zoom,context=window.siteLedgerDrawingContext?.(),ratio=context?.viewport?context.viewport.height/context.viewport.width:.7;
       state.baseWidth=baseWidth;list.style.width=width+'px';const fragment=document.createDocumentFragment();
       for(let page=1;page<=pdf.numPages;page++){
         const card=document.createElement('article');card.className='sl-scroll-sheet';card.dataset.page=String(page);
@@ -143,9 +143,18 @@
     }
     function restorePoint(anchor){const row=state.rows[anchor.n-1];if(!row)return;wrap.scrollLeft=Math.max(0,anchor.x*row.width-anchor.px);wrap.scrollTop=Math.max(0,row.card.offsetTop+row.card.children[0].offsetHeight+anchor.y*row.paper.offsetHeight-anchor.py)}
     function cancelRenders(){for(const row of state.rows){if(row.loading){row.token=(row.token||0)+1;row.cancelRender?.();row.task?.cancel()}}}
-    function sharp(){clearTimeout(state.zoomTimer);state.zoomTimer=setTimeout(()=>{state.zoomTimer=null;update()},170)}
+    function settleToPage(n){
+      if(!state.active||state.zoom<=1.05||!state.rows.length)return;
+      const row=state.rows[Math.max(0,Math.min(state.rows.length-1,(Number(n)||state.current)-1))];if(!row)return;
+      const head=row.card.children[0]?.offsetHeight||0,pageTop=row.card.offsetTop+head,pageHeight=row.paper.offsetHeight,pageBottom=pageTop+pageHeight,view=wrap.clientHeight;
+      let next=wrap.scrollTop;
+      if(pageHeight<=view)next=Math.max(0,pageTop-(view-pageHeight)/2);
+      else next=Math.max(pageTop,Math.min(pageBottom-view,next));
+      if(Math.abs(next-wrap.scrollTop)>1)wrap.scrollTop=next;
+    }
+    function sharp(){clearTimeout(state.zoomTimer);state.zoomTimer=setTimeout(()=>{state.zoomTimer=null;settleToPage(state.lastZoomPage);update()},170)}
     state.setZoom=(zoom,anchor=pointAnchor(),sharpen=true)=>{
-      if(!state.active||!anchor)return;state.zoom=Math.max(.5,Math.min(6,Math.round(zoom*1000)/1000));
+      if(!state.active||!anchor)return;state.lastZoomPage=anchor.n||state.current;state.zoom=Math.max(.5,Math.min(6,Math.round(zoom*1000)/1000));
       cancelRenders();state.list.style.width=state.baseWidth*state.zoom+'px';
       for(const row of state.rows){row.width=state.baseWidth*state.zoom;row.paper.style.height=Math.max(40,Math.round(row.width*row.ratio))+'px'}
       restorePoint(anchor);label();if(sharpen)sharp();schedule();
@@ -175,9 +184,9 @@
     };
     function localMid(touches){const rect=wrap.getBoundingClientRect();return {x:(touches[0].clientX+touches[1].clientX)/2-rect.left,y:(touches[0].clientY+touches[1].clientY)/2-rect.top}}
     const distance=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
-    function touchStart(event){if(!state.active||event.touches.length!==2)return;const mid=localMid(event.touches);state.gesturing=true;clearTimeout(state.zoomTimer);state.zoomTimer=null;cancelRenders();state.pinch={distance:distance(event.touches),zoom:state.zoom,anchor:pointAnchor(mid.x,mid.y)}}
+    function touchStart(event){if(!state.active||event.touches.length!==2)return;const mid=localMid(event.touches);state.gesturing=true;wrap.classList.add('sl-is-pinching');clearTimeout(state.zoomTimer);state.zoomTimer=null;cancelRenders();const anchor=pointAnchor(mid.x,mid.y);state.lastZoomPage=anchor?.n||state.current;state.pinch={distance:distance(event.touches),zoom:state.zoom,anchor}}
     function touchMove(event){if(!state.active||!state.pinch||event.touches.length!==2)return;event.preventDefault();const mid=localMid(event.touches),anchor={...state.pinch.anchor,px:mid.x,py:mid.y};state.setZoom(state.pinch.zoom*distance(event.touches)/Math.max(1,state.pinch.distance),anchor,false)}
-    function touchEnd(event){if(state.pinch&&event.touches.length<2){state.pinch=null;state.gesturing=false;sharp()}}
+    function touchEnd(event){if(state.pinch&&event.touches.length<2){state.pinch=null;state.gesturing=false;wrap.classList.remove('sl-is-pinching');sharp()}}
     function wheel(event){if(!state.active||(!event.ctrlKey&&!event.metaKey))return;event.preventDefault();const rect=wrap.getBoundingClientRect();state.setZoom(state.zoom*(event.deltaY<0?1.12:.89),pointAnchor(event.clientX-rect.left,event.clientY-rect.top))}
     state.jump=n=>{
       n=Math.max(1,Math.min(pdf.numPages,Number(n)||1));
@@ -193,7 +202,7 @@
       wrap.addEventListener('scroll',schedule,{passive:true});wrap.addEventListener('wheel',wheel,{passive:false});wrap.addEventListener('touchstart',touchStart,{passive:true});wrap.addEventListener('touchmove',touchMove,{passive:false});wrap.addEventListener('touchend',touchEnd,{passive:true});wrap.addEventListener('touchcancel',touchEnd,{passive:true});
     };
     state.start=start;state.stop=stop;state.resize=()=>{if(state.active&&!state.switching)start(state.current,pointAnchor()).catch(console.error)};
-    state.destroy=async()=>{state.transition++;wrap.removeEventListener('scroll',schedule);wrap.removeEventListener('wheel',wheel);wrap.removeEventListener('touchstart',touchStart);wrap.removeEventListener('touchmove',touchMove);wrap.removeEventListener('touchend',touchEnd);wrap.removeEventListener('touchcancel',touchEnd);document.body.classList.remove('sl-editing-drawing');await stop()};
+    state.destroy=async()=>{state.transition++;wrap.classList.remove('sl-is-pinching');wrap.removeEventListener('scroll',schedule);wrap.removeEventListener('wheel',wheel);wrap.removeEventListener('touchstart',touchStart);wrap.removeEventListener('touchmove',touchMove);wrap.removeEventListener('touchend',touchEnd);wrap.removeEventListener('touchcancel',touchEnd);document.body.classList.remove('sl-editing-drawing');await stop()};
     return state;
   }
   const previous=window.prevDrawingPage,next=window.nextDrawingPage;
