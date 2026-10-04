@@ -143,7 +143,7 @@
     }
     function restorePoint(anchor){const row=state.rows[anchor.n-1];if(!row)return;wrap.scrollLeft=Math.max(0,anchor.x*row.width-anchor.px);wrap.scrollTop=Math.max(0,row.card.offsetTop+row.card.children[0].offsetHeight+anchor.y*row.paper.offsetHeight-anchor.py)}
     function cancelRenders(){for(const row of state.rows){if(row.loading){row.token=(row.token||0)+1;row.cancelRender?.();row.task?.cancel()}}}
-    function sharp(){clearTimeout(state.zoomTimer);state.zoomTimer=setTimeout(()=>{state.zoomTimer=null;update()},220)}
+    function sharp(){clearTimeout(state.zoomTimer);state.zoomTimer=setTimeout(()=>{state.zoomTimer=null;if(state.active&&state.zoom>1.15){state.single(state.current).catch(console.error);return}update()},170)}
     state.setZoom=(zoom,anchor=pointAnchor(),sharpen=true)=>{
       if(!state.active||!anchor)return;state.zoom=Math.max(.5,Math.min(6,Math.round(zoom*1000)/1000));
       cancelRenders();state.list.style.width=state.baseWidth*state.zoom+'px';
@@ -189,7 +189,7 @@
       label.style.display='none';const select=document.createElement('select');select.id='sl_page_select';select.className='sl-page-select';select.setAttribute('aria-label','Jump to drawing page');
       for(let n=1;n<=pdf.numPages;n++){const option=document.createElement('option');option.value=String(n);option.textContent=`Page ${n} of ${pdf.numPages}`;select.appendChild(option)}
       select.onchange=()=>state.jump(select.value);parent.insertBefore(select,label);state.select=select;
-      const button=document.createElement('button');button.id='sl_drawing_done';button.className='sl-drawing-done';button.textContent='Done';button.onclick=()=>state.done().catch(console.error);q('sl_page_label').closest('.sl-viewbar')?.appendChild(button);state.button=button;
+      const button=document.createElement('button');button.id='sl_drawing_done';button.className='sl-drawing-done';button.textContent='Sheets';button.title='Return to continuous sheet view';button.setAttribute('aria-label','Return to continuous sheet view');button.onclick=()=>state.done().catch(console.error);q('sl_page_label').closest('.sl-viewbar')?.appendChild(button);state.button=button;
       wrap.addEventListener('scroll',schedule,{passive:true});wrap.addEventListener('wheel',wheel,{passive:false});wrap.addEventListener('touchstart',touchStart,{passive:true});wrap.addEventListener('touchmove',touchMove,{passive:false});wrap.addEventListener('touchend',touchEnd,{passive:true});wrap.addEventListener('touchcancel',touchEnd,{passive:true});
     };
     state.start=start;state.stop=stop;state.resize=()=>{if(state.active&&!state.switching)start(state.current,pointAnchor()).catch(console.error)};
@@ -213,7 +213,7 @@
   };
   const originalZoom=window.changeDrawingZoom,originalFit=window.fitDrawing;
   window.changeDrawingZoom=delta=>controller?.active?controller.setZoom(controller.zoom+delta):originalZoom(delta);
-  window.fitDrawing=()=>controller?.active?controller.setZoom(1):originalFit();
+  window.fitDrawing=()=>controller?.active?controller.setZoom(1):(controller?.editing?(controller.done().catch(console.error),undefined):originalFit());
   for(const name of ['slFieldMarkup','slFieldRfi','slFieldMeasureMenu']){const action=window[name];if(action)window[name]=async function(){if(await window.siteLedgerDrawingScroll.edit())return action.apply(this,arguments)}}
   window.addEventListener('sl:drawing-page',()=>{if(controller&&!controller.active){controller.current=window.siteLedgerDrawingContext?.().page||1;if(controller.select)controller.select.value=String(controller.current)}});
   let resizeTimer;window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>controller?.resize(),180)});
