@@ -1,1 +1,14 @@
 .sl-drawing-markup-layer{position:absolute;inset:0;z-index:3;display:block}.sl-markup-session-bar{display:flex;align-items:center;gap:6px;overflow-x:auto;flex:0 0 auto;padding:6px 7px;background:#fff;border:1px solid #d0d5dd;border-radius:10px;margin:3px 0 6px;-webkit-overflow-scrolling:touch}.sl-markup-session-bar strong{white-space:nowrap}.sl-markup-tool,.sl-markup-done{white-space:nowrap;border:1px solid #d0d5dd;background:#fff;color:#344054;border-radius:9px;height:34px;padding:0 10px;font-weight:750}.sl-markup-tool.active{background:#101828;color:#fff;border-color:#101828}.sl-markup-tool:disabled{opacity:.45}.sl-markup-done{background:#101828;color:#fff;border-color:#101828;margin-left:auto}.sl-markup-colors{display:flex;gap:5px;align-items:center}.sl-markup-color{width:25px;height:25px;min-width:25px;border-radius:50%;border:3px solid #fff;background:var(--mc);box-shadow:0 0 0 1px #d0d5dd}.sl-markup-color.active{box-shadow:0 0 0 3px #101828}@media(max-width:640px){.sl-markup-session-bar{gap:5px;padding:5px}.sl-markup-session-bar strong{font-size:12px}.sl-markup-tool,.sl-markup-done{height:32px;padding:0 8px;font-size:11px}.sl-markup-color{width:23px;height:23px;min-width:23px}}
+
+/* v2 compact markup controls */
+.sl-workspace-active .sl-markup-session-bar{min-height:32px!important;height:32px!important;gap:3px!important;padding:2px 3px!important;margin:1px 0 2px!important;border-radius:8px!important}
+.sl-workspace-active .sl-markup-session-bar strong{font-size:10px!important;margin-right:1px!important}
+.sl-workspace-active .sl-markup-tool,.sl-workspace-active .sl-markup-done{height:27px!important;padding:0 7px!important;border-radius:7px!important;font-size:10px!important}
+.sl-workspace-active .sl-markup-color{width:20px!important;height:20px!important;min-width:20px!important;border-width:2px!important}
+.sl-workspace-active .sl-markup-colors{gap:3px!important}
+@media(max-width:640px){
+ .sl-workspace-active .sl-markup-session-bar strong{display:none!important}
+ .sl-workspace-active .sl-markup-session-bar{height:31px!important;min-height:31px!important;overflow-x:auto!important;overflow-y:hidden!important}
+ .sl-workspace-active .sl-markup-tool,.sl-workspace-active .sl-markup-done{height:26px!important;padding:0 6px!important;font-size:9px!important}
+ .sl-workspace-active .sl-markup-color{width:18px!important;height:18px!important;min-width:18px!important}
+}
