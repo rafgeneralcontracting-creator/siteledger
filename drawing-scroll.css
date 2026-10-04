@@ -28,3 +28,10 @@
   border-bottom:1px solid #eaecf0!important;
 }
 .sl-scroll-active .sl-scroll-paper{background:#fff!important}
+
+
+/* v5 zoom stability: keep continuous sheets readable during pinch */
+.sl-scroll-active .sl-canvas-wrap.sl-is-pinching .sl-scroll-sheet-head{opacity:0!important;height:0!important;min-height:0!important;padding:0!important;border:0!important;overflow:hidden!important}
+.sl-scroll-active .sl-canvas-wrap.sl-is-pinching .sl-scroll-sheet{box-shadow:none!important}
+.sl-scroll-active .sl-canvas-wrap.sl-is-pinching .sl-scroll-list{will-change:width}
+.sl-scroll-active .sl-scroll-canvas{backface-visibility:hidden;transform:translateZ(0)}
