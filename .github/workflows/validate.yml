@@ -1,7 +1,7 @@
 name: Validate SiteLedger
 on:
   push:
-    branches: [main, 'launch/**']
+    branches: [main]
   pull_request:
   workflow_dispatch:
 jobs:
