@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import { jsPDF } from 'jspdf';
+import { getDocument } from '../mobile/pdf-runtime.mjs';
+import { resolve } from 'node:path';
+const pdf=new jsPDF();pdf.text('RAF Construction Management',20,20);pdf.addPage();pdf.text('Second construction sheet',20,20);
+const bytes=new Uint8Array(pdf.output('arraybuffer'));
+const task=getDocument({data:bytes,standardFontDataUrl:resolve('node_modules/pdfjs-dist/standard_fonts')+'/'}),document=await task.promise;
+assert.equal(document.numPages,2);
+const first=await document.getPage(1),text=await first.getTextContent();
+assert(text.items.some(item=>item.str.includes('RAF Construction Management')));
+assert.equal(typeof document.destroy,'function');
+await document.destroy();
+console.log('PASS actual PDF export, mobile PDF parser, multiple pages, text extraction and document cleanup');
