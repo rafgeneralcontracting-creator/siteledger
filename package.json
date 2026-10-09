@@ -1,0 +1,29 @@
+{
+  "name": "raf-construction-management",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "test": "node tests/drawing-performance.test.cjs && node tests/drawing-scroll.test.cjs && node tests/mobile-build.test.cjs && node tests/mobile-pdf.test.mjs",
+    "build:mobile": "node scripts/build-mobile.mjs",
+    "sync:mobile": "npm run build:mobile && cap sync",
+    "open:ios": "cap open ios",
+    "open:android": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/browser": "8.0.5",
+    "@capacitor/camera": "8.2.5",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/filesystem": "8.1.4",
+    "@capacitor/ios": "8.5.3",
+    "@capacitor/share": "8.0.3",
+    "jspdf": "4.2.1",
+    "jszip": "3.10.1",
+    "pdfjs-dist": "6.4.299"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3",
+    "esbuild": "0.28.2"
+  }
+}

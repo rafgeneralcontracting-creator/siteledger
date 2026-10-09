@@ -9,7 +9,9 @@ function harness({pages=250,mobile=true,hold=false}={}){
   class Element{
     constructor(tag){this.tagName=tag;this.children=[];this.parentNode=null;this.style={};this.dataset={};this.attributes={};this.handlers=new Map();this.className='';this._text='';this.scrollTop=0;this.scrollLeft=0;this.width=0;this.height=0;this.value='';this._clientWidth=0;this._clientHeight=0;this.classList={add:(...names)=>{const all=new Set(this.className.split(' ').filter(Boolean));names.forEach(x=>all.add(x));this.className=[...all].join(' ')},remove:(...names)=>{this.className=this.className.split(' ').filter(x=>!names.includes(x)).join(' ')},contains:n=>this.className.split(' ').includes(n),toggle:(n,on)=>{if(on)this.classList.add(n);else this.classList.remove(n)}}}
     get textContent(){return this._text}set textContent(value){this._text=String(value);for(const c of this.children)c.parentNode=null;this.children=[]}
-    get clientWidth(){return this._clientWidth||this.parentNode?.clientWidth||420}get clientHeight(){return this._clientHeight||600}
+    get clientWidth(){return this._clientWidth||parseFloat(this.style.width)||this.parentNode?.clientWidth||420}get clientHeight(){return this._clientHeight||600}
+    get scrollWidth(){return Math.max(this.clientWidth,...this.children.map(c=>c.scrollWidth))}
+    get scrollHeight(){return Math.max(this.clientHeight,this.children.reduce((sum,c)=>sum+c.offsetHeight+(c.className==='sl-scroll-sheet'?18:0),0))}
     get offsetHeight(){if(this.style.height)return parseFloat(this.style.height);if(this.className==='sl-scroll-sheet-head')return 40;return this.children.reduce((sum,c)=>sum+c.offsetHeight,0)}
     get offsetTop(){if(!this.parentNode)return 0;let top=0;for(const c of this.parentNode.children){if(c===this)break;top+=c.offsetHeight+(c.className==='sl-scroll-sheet'?18:0)}return top}
     appendChild(child){if(child.tagName==='fragment'){for(const item of [...child.children])this.appendChild(item);child.children=[];return child}child.remove();child.parentNode=this;this.children.push(child);return child}

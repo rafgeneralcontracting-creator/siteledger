@@ -1,7 +1,8 @@
 name: Validate SiteLedger
 on:
   push:
-    branches: [main]
+    branches: [main, 'launch/**']
+  pull_request:
   workflow_dispatch:
 jobs:
   validate:
@@ -15,4 +16,7 @@ jobs:
         run: |
           node tests/drawing-performance.test.cjs
           node tests/drawing-scroll.test.cjs
+      - run: npm ci --ignore-scripts
+      - run: npm run build:mobile
+      - run: node tests/mobile-build.test.cjs
 

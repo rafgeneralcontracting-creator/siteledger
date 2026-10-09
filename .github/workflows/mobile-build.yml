@@ -1,0 +1,53 @@
+name: Build mobile candidates
+on:
+  push:
+    branches: ['launch/mobile-stores']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - run: npm ci --ignore-scripts
+      - run: npm run build:mobile
+      - run: npm test
+      - run: npx cap sync android
+      - name: Build test APK and unsigned release bundle
+        working-directory: android
+        run: ./gradlew assembleDebug bundleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-candidate-not-for-store-upload
+          path: |
+            android/app/build/outputs/apk/debug/*.apk
+            android/app/build/outputs/bundle/release/*.aab
+  ios:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run build:mobile
+      - run: npm test
+      - run: npx cap sync ios
+      - name: Build simulator candidate without distribution signing
+        run: xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios-build CODE_SIGNING_ALLOWED=NO build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-candidate-not-for-store-upload
+          path: ios-build/Build/Products/Debug-iphonesimulator/App.app

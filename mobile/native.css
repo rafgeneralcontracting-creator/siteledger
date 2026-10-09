@@ -1,0 +1,6 @@
+.native-app .topbar { padding-top: env(safe-area-inset-top); }
+.native-app .bottomnav { padding-bottom: env(safe-area-inset-bottom); }
+.native-app .page { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
+.native-app .logo { font-size: 14px; }
+.native-app .modal .sheet { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+.native-app .auth-shell { padding-top: env(safe-area-inset-top); }
