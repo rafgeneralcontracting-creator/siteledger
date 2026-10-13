@@ -7,9 +7,10 @@ async function put(x){const d=await db();return new Promise((ok,no)=>{const q=d.
 async function del(id){const d=await db();return new Promise((ok,no)=>{const q=d.transaction(STORE,'readwrite').objectStore(STORE).delete(id);q.onsuccess=()=>ok();q.onerror=()=>no(q.error)})}
 async function signed(path){const enc=path.split('/').map(encodeURIComponent).join('/'),r=await fetch(`${SB}/storage/v1/object/sign/${BUCKET}/${enc}`,{method:'POST',headers:{apikey:KEY,Authorization:'Bearer '+token,'Content-Type':'application/json'},body:'{"expiresIn":600}'}),x=await r.json();if(!r.ok)throw new Error(x.message||'Could not download drawing');const u=x.signedURL||x.signedUrl;return /^https?:/.test(u)?u:`${SB}/storage/v1${u}`}
 window.siteLedgerOfflineDrawing={
+ async record(id){return get(id)},
  async has(id){return !!(await get(id))},
  async bytes(id,path){const x=await get(id);if(path&&x?.storage_path!==path)return null;return x?.blob?new Uint8Array(await x.blob.arrayBuffer()):null},
- async save(d){const u=await signed(d.storage_path),r=await fetch(u);if(!r.ok)throw new Error('Drawing download failed');const blob=await r.blob();await put({id:d.id,project_id:d.project_id,folder_id:d.folder_id||null,title:d.title||d.original_filename||'Drawing',storage_path:d.storage_path,blob,size:blob.size,saved_at:Date.now()});return blob.size},
+ async save(d){const u=await signed(d.storage_path),r=await fetch(u);if(!r.ok)throw new Error('Drawing download failed');const blob=await r.blob();await put({id:d.id,project_id:d.project_id,folder_id:d.folder_id||null,title:d.title||d.original_filename||'Drawing',original_filename:d.original_filename||null,mime_type:d.mime_type||'application/pdf',storage_path:d.storage_path,blob,size:blob.size,saved_at:Date.now()});return blob.size},
  async remove(id){await del(id)}
 };
 window.downloadDrawingOffline=async function(id,btn){try{btn&&(btn.disabled=true,btn.textContent='Downloading…');const d=(await rest(`drawings?select=*&id=eq.${id}&limit=1`))[0];if(!d)throw new Error('Drawing not found');await siteLedgerOfflineDrawing.save(d);btn&&(btn.disabled=false,btn.textContent='✓ Offline');await decorate()}catch(e){btn&&(btn.disabled=false,btn.textContent='Offline');alert(e.message)}};
