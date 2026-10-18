@@ -1,0 +1,15 @@
+{
+  "operator": "Hamit Development Inc.",
+  "appName": "Hamit Construction Management",
+  "trialDays": 3,
+  "billingInterval": "month",
+  "currency": "USD",
+  "revenueCatApplePublicKey": "",
+  "revenueCatGooglePublicKey": "",
+  "entitlement": "company_access",
+  "plans": [
+    {"id":"starter","name":"Starter","monthlyPrice":99,"members":5,"activeProjects":3,"storageGB":25,"monthlyDownloadGB":75,"monthlyAIScans":20,"productId":"hamit_starter_monthly"},
+    {"id":"team","name":"Team","monthlyPrice":199,"members":15,"activeProjects":10,"storageGB":100,"monthlyDownloadGB":250,"monthlyAIScans":50,"productId":"hamit_team_monthly"},
+    {"id":"business","name":"Business","monthlyPrice":399,"members":30,"activeProjects":25,"storageGB":250,"monthlyDownloadGB":750,"monthlyAIScans":100,"productId":"hamit_business_monthly"}
+  ]
+}

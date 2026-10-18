@@ -1,0 +1,139 @@
+{
+  "asOf": "2026-10-18",
+  "measurement": {
+    "organizations": 2,
+    "activeUsers": 4,
+    "projects": 6,
+    "files": 1111,
+    "storageBytes": 5741008239,
+    "databaseBytes": 21965971
+  },
+  "assumptions": {
+    "storeFeeBase": 0.3,
+    "storeFeeReduced": 0.15,
+    "refundReserve": 0.03,
+    "revenueCat": 0.01,
+    "aiBudgetPerScan": 0.1,
+    "fixedMonthlyBudget": 200,
+    "developmentMonthlyBudget": 2000,
+    "trialConversion": 0.25
+  },
+  "standard": [
+    {
+      "plan": "starter",
+      "price": 99,
+      "costs": {
+        "trialAcquisitionReserve": 9,
+        "storage": 0.5325,
+        "downloads": 6.75,
+        "backupStorage": 0.75,
+        "ai": 2,
+        "support": 10,
+        "compute": 5,
+        "refundReserve": 2.9699999999999998,
+        "billingService": 0.99,
+        "storeFee": 29.7
+      },
+      "total": 67.6925,
+      "contribution": 31.307500000000005,
+      "contributionMargin": 0.31623737373737376
+    },
+    {
+      "plan": "team",
+      "price": 199,
+      "costs": {
+        "trialAcquisitionReserve": 9,
+        "storage": 2.13,
+        "downloads": 22.5,
+        "backupStorage": 3,
+        "ai": 5,
+        "support": 20,
+        "compute": 10,
+        "refundReserve": 5.97,
+        "billingService": 1.99,
+        "storeFee": 59.699999999999996
+      },
+      "total": 139.29,
+      "contribution": 59.71000000000001,
+      "contributionMargin": 0.30005025125628143
+    },
+    {
+      "plan": "business",
+      "price": 399,
+      "costs": {
+        "trialAcquisitionReserve": 9,
+        "storage": 5.325,
+        "downloads": 67.5,
+        "backupStorage": 7.5,
+        "ai": 10,
+        "support": 40,
+        "compute": 20,
+        "refundReserve": 11.969999999999999,
+        "billingService": 3.99,
+        "storeFee": 119.69999999999999
+      },
+      "total": 294.985,
+      "contribution": 104.01499999999999,
+      "contributionMargin": 0.2606892230576441
+    }
+  ],
+  "reduced": [
+    {
+      "plan": "starter",
+      "price": 99,
+      "costs": {
+        "trialAcquisitionReserve": 9,
+        "storage": 0.5325,
+        "downloads": 6.75,
+        "backupStorage": 0.75,
+        "ai": 2,
+        "support": 10,
+        "compute": 5,
+        "refundReserve": 2.9699999999999998,
+        "billingService": 0.99,
+        "storeFee": 14.85
+      },
+      "total": 52.8425,
+      "contribution": 46.1575,
+      "contributionMargin": 0.46623737373737373
+    },
+    {
+      "plan": "team",
+      "price": 199,
+      "costs": {
+        "trialAcquisitionReserve": 9,
+        "storage": 2.13,
+        "downloads": 22.5,
+        "backupStorage": 3,
+        "ai": 5,
+        "support": 20,
+        "compute": 10,
+        "refundReserve": 5.97,
+        "billingService": 1.99,
+        "storeFee": 29.849999999999998
+      },
+      "total": 109.43999999999998,
+      "contribution": 89.56000000000002,
+      "contributionMargin": 0.4500502512562815
+    },
+    {
+      "plan": "business",
+      "price": 399,
+      "costs": {
+        "trialAcquisitionReserve": 9,
+        "storage": 5.325,
+        "downloads": 67.5,
+        "backupStorage": 7.5,
+        "ai": 10,
+        "support": 40,
+        "compute": 20,
+        "refundReserve": 11.969999999999999,
+        "billingService": 3.99,
+        "storeFee": 59.849999999999994
+      },
+      "total": 235.135,
+      "contribution": 163.865,
+      "contributionMargin": 0.41068922305764416
+    }
+  ]
+}

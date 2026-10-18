@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Hamit Construction Management</string>
+    <string name="title_activity_main">Hamit Construction Management</string>
+    <string name="package_name">com.hamitdevelopment.constructionmanagement</string>
+    <string name="custom_url_scheme">com.hamitdevelopment.constructionmanagement</string>
+</resources>
