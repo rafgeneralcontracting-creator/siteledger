@@ -35,12 +35,10 @@
   }
   function create(pdf,drawing){
     const wrap=q('sl_canvas_wrap'),stage=q('sl_canvas_stage');
-    const state={pdf,drawing,wrap,stage,rows:[],active:false,current:1,wanted:new Set(),generation:0,running:0,frame:null,switching:false,transition:0,select:null,button:null,zoom:1,baseWidth:400,zoomTimer:null,pinch:null,gesturing:false,editing:false,lastZoomPage:1,lastTap:0,lastTapPoint:null,fitMode:'width',zoomFrame:null,pendingZoom:null,detail:null,detailTask:null,detailTimer:null,detailVersion:0};
+    const state={pdf,drawing,wrap,stage,rows:[],active:false,current:1,wanted:new Set(),generation:0,running:0,frame:null,switching:false,transition:0,select:null,button:null,zoom:1,baseWidth:400,zoomTimer:null,pinch:null,gesturing:false,editing:false,lastZoomPage:1,lastTap:0,lastTapPoint:null,fitMode:'width',zoomFrame:null,pendingZoom:null};
     function valid(row,generation,token){return controller===state&&state.active&&state.generation===generation&&state.wanted.has(row.n)&&(token===undefined||row.token===token)}
     function label(){if(state.select)state.select.value=String(state.current);if(state.active&&q('sl_zoom_label')){const button=q('sl_zoom_label');button.textContent=state.fitMode==='width'?'Width':state.fitMode==='page'?'Page':Math.round(state.zoom*100)+'%';button.setAttribute('aria-label','Drawing view: '+Math.round(state.zoom*100)+' percent. Open zoom and fit options');}}
-    function clearDetail(){state.detailVersion++;clearTimeout(state.detailTimer);state.detailTimer=null;state.detailTask?.cancel();state.detailTask=null;if(state.detail){state.detail.canvas.width=state.detail.canvas.height=0;state.detail.canvas.remove();state.detail=null;}}
     function release(row){
-      if(state.detail?.n===row.n)clearDetail();
       row.cancelRender?.();row.task?.cancel();
       if(row.canvas){row.canvas.width=row.canvas.height=0;row.canvas.remove();row.canvas=null}
       row.paper.querySelectorAll('.sl-scroll-pin').forEach(p=>p.remove());row.rendered=false;
@@ -76,7 +74,7 @@
         if(!valid(row,generation,token))return;
         const result=await Promise.race([metadata,cancelled]);if(!result||!valid(row,generation,token))return;
         row.paper.querySelectorAll('.sl-scroll-pin').forEach(pin=>pin.remove());
-        if(result.value){row.data=result.value;row.pdfPage=page;preview(ctx,result.value,canvas.width,canvas.height,row.paper);row.status.textContent=''}
+        if(result.value){preview(ctx,result.value,canvas.width,canvas.height,row.paper);row.status.textContent=''}
         else row.status.textContent='Markup preview unavailable. Try the Markup tool to review.';
         if(row.canvas){row.canvas.width=row.canvas.height=0;row.canvas.remove()}
         row.canvas=canvas;row.paper.prepend(canvas);buffer=null;row.rendered=true;row.renderWidth=width;row.error=false;
@@ -87,7 +85,7 @@
       }finally{
         if(buffer)buffer.width=buffer.height=0;
         if(!valid(row,generation))release(row);
-        row.cancelRender=null;row.loading=false;state.running--;pump();queueDetail();
+        row.cancelRender=null;row.loading=false;state.running--;pump();
       }
     }
     function pump(){
@@ -108,11 +106,10 @@
       state.wanted=new Set(nearby.sort((a,b)=>Math.abs(a-state.current)-Math.abs(b-state.current)).slice(0,state.zoom>1?(isMobile()?3:5):(isMobile()?7:9)));
       for(const row of state.rows)if(!state.wanted.has(row.n)&&(row.canvas||row.task))release(row);
       pump();
-      queueDetail();
     }
     function schedule(){if(state.frame!==null)return;state.frame=requestAnimationFrame(()=>{state.frame=null;update()})}
     async function stop(){
-      state.active=false;state.generation++;state.pinch=null;state.gesturing=false;clearTimeout(state.zoomTimer);state.zoomTimer=null;clearDetail();cancelAnimationFrame(state.zoomFrame);state.zoomFrame=null;state.pendingZoom=null;
+      state.active=false;state.generation++;state.pinch=null;state.gesturing=false;clearTimeout(state.zoomTimer);state.zoomTimer=null;cancelAnimationFrame(state.zoomFrame);state.zoomFrame=null;state.pendingZoom=null;
       if(state.frame!==null)cancelAnimationFrame(state.frame);state.frame=null;
       const pending=[];for(const row of state.rows){row.cancelRender?.();if(row.task){row.task.cancel();pending.push(row.task.promise.catch(()=>{}))}}
       await Promise.all(pending);
@@ -158,7 +155,7 @@
     function cancelRenders(){for(const row of state.rows){if(row.loading){row.token=(row.token||0)+1;row.cancelRender?.();row.task?.cancel()}}}
     function sharp(){clearTimeout(state.zoomTimer);state.zoomTimer=setTimeout(()=>{state.zoomTimer=null;update()},160)}
     state.setZoom=(zoom,anchor=pointAnchor(),sharpen=true)=>{
-      if(!state.active||!anchor)return;state.fitMode=null;clearDetail();state.lastZoomPage=anchor.n||state.current;state.zoom=Math.max(.25,Math.min(8,Math.round(zoom*1000)/1000));
+      if(!state.active||!anchor)return;state.fitMode=null;state.lastZoomPage=anchor.n||state.current;state.zoom=Math.max(.25,Math.min(8,Math.round(zoom*1000)/1000));
       cancelRenders();state.list.style.width=state.baseWidth*state.zoom+'px';
       for(const row of state.rows){row.width=state.baseWidth*state.zoom;row.paper.style.height=Math.max(40,Math.round(row.width*row.ratio))+'px'}
       restorePoint(anchor);label();if(sharpen)sharp();schedule();
@@ -172,28 +169,6 @@
       const zoom=mode==='page'?Math.min(1,Math.max(.25,(wrap.clientHeight-116)/(state.baseWidth*row.ratio))):1;
       state.setZoom(zoom,{n:row.n,x:.5,y:mode==='page'?.5:0,px:wrap.clientWidth/2,py:mode==='page'?(wrap.clientHeight-12)/2:56});state.fitMode=mode;label();
     };
-    function queueDetail(){clearTimeout(state.detailTimer);state.detailTimer=null;if(!state.active||state.zoom<1.5||state.gesturing||state.zoomTimer!==null||state.running||state.detailTask)return;state.detailTimer=setTimeout(()=>{state.detailTimer=null;renderDetail().catch(console.error)},130);}
-    async function renderDetail(){
-      if(!state.active||state.gesturing||state.zoomTimer!==null||state.running)return;
-      const row=state.rows[find(wrap.scrollTop+wrap.clientHeight/2)];if(!row?.rendered||!row.pdfPage||!row.data||row.renderWidth!==row.width)return;
-      const top=row.card.offsetTop+(row.card.children[0]?.offsetHeight||0),pad=96;
-      const x=Math.max(0,wrap.scrollLeft-(state.list?.offsetLeft||0)-pad),y=Math.max(0,wrap.scrollTop-top-pad);
-      const width=Math.min(row.width-x,wrap.clientWidth+pad*2),height=Math.min(row.paper.offsetHeight-y,wrap.clientHeight+pad*2);if(width<=0||height<=0)return;
-      const key=[row.n,row.width,Math.round(x),Math.round(y),Math.round(width),Math.round(height)].join(':');if(state.detail?.key===key)return;
-      clearDetail();const version=state.detailVersion,generation=state.generation,maxPixels=isMobile()?3000000:6000000;
-      const scale=Math.min(2,window.devicePixelRatio||1,Math.sqrt(maxPixels/(width*height)),4096/Math.max(width,height));
-      const canvas=document.createElement('canvas');canvas.className='sl-scroll-detail';canvas.setAttribute('aria-hidden','true');canvas.width=Math.max(1,Math.floor(width*scale));canvas.height=Math.max(1,Math.floor(height*scale));
-      Object.assign(canvas.style,{left:x+'px',top:y+'px',width:width+'px',height:height+'px'});
-      const ctx=canvas.getContext('2d',{alpha:false}),base=row.pdfPage.getViewport({scale:1});let task;
-      try{
-        task=row.pdfPage.render({canvasContext:ctx,viewport:row.pdfPage.getViewport({scale:row.width/base.width*scale}),transform:[1,0,0,1,-x*scale,-y*scale]});state.detailTask=task;
-        await task.promise;
-        if(!state.active||state.gesturing||state.detailVersion!==version||state.generation!==generation)return;
-        ctx.save();ctx.translate(-x*scale,-y*scale);preview(ctx,row.data,row.width*scale,row.paper.offsetHeight*scale,null);ctx.restore();
-        row.paper.appendChild(canvas);state.detail={n:row.n,canvas,key};
-      }catch(error){if(error?.name!=='RenderingCancelledException')console.warn('Drawing detail render unavailable',error)}
-      finally{if(state.detail?.canvas!==canvas)canvas.width=canvas.height=0;if(state.detailTask===task)state.detailTask=null;queueDetail();}
-    }
     state.single=async n=>{
       if(state.switching||!canSwitch())return false;flushZoom();
       state.switching=true;state.transition++;n=Math.max(1,Math.min(pdf.numPages,Number(n)||state.current));
@@ -219,7 +194,7 @@
     };
     function localMid(touches){const rect=wrap.getBoundingClientRect();return {x:(touches[0].clientX+touches[1].clientX)/2-rect.left,y:(touches[0].clientY+touches[1].clientY)/2-rect.top}}
     const distance=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
-    function touchStart(event){if(!state.active||event.touches.length!==2)return;flushZoom();clearDetail();state.lastTap=0;const mid=localMid(event.touches);state.gesturing=true;wrap.classList.add('sl-is-pinching');clearTimeout(state.zoomTimer);state.zoomTimer=null;cancelRenders();const anchor=pointAnchor(mid.x,mid.y);state.lastZoomPage=anchor?.n||state.current;state.pinch={distance:distance(event.touches),zoom:state.zoom,anchor}}
+    function touchStart(event){if(!state.active||event.touches.length!==2)return;flushZoom();state.lastTap=0;const mid=localMid(event.touches);state.gesturing=true;wrap.classList.add('sl-is-pinching');clearTimeout(state.zoomTimer);state.zoomTimer=null;cancelRenders();const anchor=pointAnchor(mid.x,mid.y);state.lastZoomPage=anchor?.n||state.current;state.pinch={distance:distance(event.touches),zoom:state.zoom,anchor}}
     function touchMove(event){
       if(!state.active||!state.pinch||event.touches.length!==2)return;
       event.preventDefault();
@@ -240,11 +215,11 @@
       }else{state.lastTap=now;state.lastTapPoint=pt}
     }
     let drag=null;
-    function panStart(event){if(!state.active||event.pointerType!=='mouse'||event.button!==0||event.target?.closest('button,select,summary,a'))return;drag={id:event.pointerId,x:event.clientX,y:event.clientY,left:wrap.scrollLeft,top:wrap.scrollTop};wrap.setPointerCapture?.(event.pointerId);wrap.classList.add('sl-is-panning');clearDetail();event.preventDefault();}
+    function panStart(event){if(!state.active||event.pointerType!=='mouse'||event.button!==0||event.target?.closest('button,select,summary,a'))return;drag={id:event.pointerId,x:event.clientX,y:event.clientY,left:wrap.scrollLeft,top:wrap.scrollTop};wrap.setPointerCapture?.(event.pointerId);wrap.classList.add('sl-is-panning');event.preventDefault();}
     function panMove(event){if(!drag||event.pointerId!==drag.id)return;wrap.scrollLeft=drag.left+drag.x-event.clientX;wrap.scrollTop=drag.top+drag.y-event.clientY;event.preventDefault();schedule();}
-    function panEnd(event){if(!drag||event.pointerId!==drag.id)return;drag=null;wrap.classList.remove('sl-is-panning');queueDetail();}
+    function panEnd(event){if(!drag||event.pointerId!==drag.id)return;drag=null;wrap.classList.remove('sl-is-panning');}
     state.jump=n=>{
-      flushZoom();clearDetail();
+      flushZoom();
       n=Math.max(1,Math.min(pdf.numPages,Number(n)||1));
       if(state.active){state.current=n;wrap.scrollTop=Math.max(0,state.rows[n-1].card.offsetTop-48);label();update()}
       else if(canSwitch())window.selectDrawingPage(n).catch(console.error);

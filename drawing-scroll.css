@@ -33,10 +33,9 @@
 /* v5 zoom stability: keep continuous sheets readable during pinch */
 .sl-scroll-active .sl-canvas-wrap.sl-is-pinching .sl-scroll-sheet-head{opacity:.5!important}
 .sl-scroll-active .sl-canvas-wrap.sl-is-pinching .sl-scroll-sheet{box-shadow:none!important}
-.sl-scroll-active .sl-canvas-wrap.sl-is-pinching .sl-scroll-list{will-change:width}
-.sl-scroll-active .sl-scroll-canvas{backface-visibility:hidden;transform:translateZ(0)}
+.sl-scroll-active .sl-canvas-wrap.sl-is-pinching .sl-scroll-list{will-change:auto}
+.sl-scroll-active .sl-scroll-canvas{backface-visibility:visible;transform:none}
 .sl-scroll-active .sl-scroll-list{padding-top:48px;padding-bottom:72px;box-sizing:content-box;overflow-anchor:none}
-.sl-scroll-detail{position:absolute;display:block;pointer-events:none;z-index:1}
 .sl-scroll-pin,.sl-scroll-page-status{z-index:2}
 .sl-scroll-active .sl-canvas-wrap{scroll-behavior:auto!important;-webkit-overflow-scrolling:touch;overscroll-behavior:none;overflow-anchor:none;cursor:grab}
 .sl-scroll-active .sl-canvas-wrap.sl-is-panning,.sl-scroll-active .sl-is-panning .sl-scroll-paper{cursor:grabbing;user-select:none}

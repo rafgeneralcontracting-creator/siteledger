@@ -131,7 +131,7 @@ async function preciseNavigation(){
   assert.equal(h.sheets()[0].children[1].style.height,'1176px','gesture updates wait for the next screen frame');
   h.wrap.trigger('touchend',{touches:[]});const top=h.wrap.scrollTop,left=h.wrap.scrollLeft;
   await h.runTimers();await h.runTimers();assert.equal(h.wrap.scrollTop,top,'releasing and sharpening never snaps the sheet vertically');assert.equal(h.wrap.scrollLeft,left,'releasing and sharpening never recenters horizontally');
-  const detail=h.rendered.find(r=>r.transform);assert(detail,'zoomed viewport gets a clipped detail render');assert(detail.canvas.width*detail.canvas.height<=3000000,'phone detail buffer is capped');assert(detail.transform[4]<=0&&detail.transform[5]<=0,'detail uses document coordinates');
+  assert(h.rendered.every(r=>!r.transform),'browsing uses one full-page surface, with no overlapping detail copies');for(const paper of h.sheets().map(s=>s.children[1]))assert(paper.querySelectorAll('canvas').length<=1,'each sheet has only one visible drawing canvas');
   await h.ctx.fitDrawingPage();await h.runTimers();assert(parseInt(h.sheets()[0].children[1].style.height)<=h.wrap.clientHeight-116,'Fit Page reserves room for floating controls');
   await h.ctx.fitDrawing();await h.runTimers();assert.equal(h.sheets()[0].children[1].style.height,'294px','Fit Width restores viewport width');
   h.ctx.changeDrawingZoom(2);await h.runTimers();h.wrap.scrollLeft=300;h.wrap.scrollTop=400;
@@ -139,8 +139,7 @@ async function preciseNavigation(){
   h.wrap.trigger('pointermove',{pointerId:1,clientX:150,clientY:160,preventDefault(){}});assert.equal(h.wrap.scrollLeft,350);assert.equal(h.wrap.scrollTop,440);
   h.wrap.trigger('pointerup',{pointerId:1});assert(!h.wrap.classList.contains('sl-is-panning'));
   await h.ctx.siteLedgerDrawingScroll.destroy();await h.runTimers();assert.equal(h.canvases().length,0,'leaving releases base and detail buffers');assert.equal(h.wrap.handlers.get('pointermove').length,0);
-  const pending=harness({pages:1});await pending.mount();pending.ctx.changeDrawingZoom(2);await pending.runTimers();pending.hold(true);await pending.runTimers();assert(pending.rendered.some(r=>r.transform&&!r.cancelled),'detail render is in flight');await pending.ctx.siteLedgerDrawingScroll.destroy();await pending.settle();assert.equal(pending.running(),0,'leaving cancels the in-flight detail job');assert(pending.rendered.filter(r=>r.transform).every(r=>r.canvas.width===0),'stale detail buffers are released');
-  console.log('PASS frame-batched pinch, no release snapping, bounded detail rendering, fit modes and desktop dragging');
+  console.log('PASS frame-batched pinch, no release snapping, one surface per page, fit modes and desktop dragging');
 }
 async function markupGestures(){
   const h=harness({pages:1});await h.mount();h.ctx.me={id:'tester'};const writes=[];let pendingSave=null;
