@@ -1,6 +1,6 @@
 {
-  "name":"SiteLedger",
-  "short_name":"SiteLedger",
+  "name":"Hamit Construction Management",
+  "short_name":"Hamit",
   "description":"Construction field management and daily reporting",
   "start_url":"./",
   "scope":"./",
@@ -9,6 +9,6 @@
   "theme_color":"#0b1220",
   "orientation":"portrait-primary",
   "icons":[
-    {"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+    {"src":"icon.svg?v=2","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
   ]
 }
