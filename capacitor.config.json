@@ -1,6 +1,6 @@
 {
-  "appId": "com.rafgeneralcontracting.constructionmanagement",
-  "appName": "RAF Construction Management",
+  "appId": "com.hamitdevelopment.constructionmanagement",
+  "appName": "Hamit Construction Management",
   "webDir": "www",
   "ios": { "contentInset": "automatic", "backgroundColor": "#0b1220" },
   "android": { "backgroundColor": "#0b1220", "allowMixedContent": false }

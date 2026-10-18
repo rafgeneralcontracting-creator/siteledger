@@ -5,7 +5,7 @@ const vm=require('node:vm');
 const root=path.join(__dirname,'..');
 const html=fs.readFileSync(path.join(root,'www/index.html'),'utf8');
 assert(!html.includes('serviceWorker'),'native bundle cannot register a web service worker');
-assert(html.includes('<title>RAF Construction Management</title>'));
+assert(html.includes('<title>Hamit Construction Management</title>'));
 assert(html.indexOf('native.js')<html.indexOf('app.js'),'native integrations load before app startup');
 for(const m of html.matchAll(/(?:src|href)="([^"?#]+)(?:\?[^"#]*)?"/g))assert(fs.existsSync(path.join(root,'www',m[1])),m[1]+' is bundled');
 for(const name of ['pdf.min.js','pdf.worker.min.mjs','jspdf.umd.min.js','jszip.min.js'])assert(fs.statSync(path.join(root,'www/vendor',name)).size>1000);

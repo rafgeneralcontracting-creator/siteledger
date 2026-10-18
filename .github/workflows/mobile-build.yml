@@ -1,7 +1,7 @@
 name: Build mobile candidates
 on:
   push:
-    branches: ['launch/mobile-stores']
+    branches: ['launch/mobile-stores', 'launch/hamit-store-ready']
   workflow_dispatch:
 permissions:
   contents: read

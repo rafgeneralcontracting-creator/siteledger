@@ -1,3 +1,4 @@
+import './billing.js';
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
@@ -7,6 +8,7 @@ import { Share } from '@capacitor/share';
 
 if(Capacitor.isNativePlatform()){
   document.documentElement.classList.add('native-app');
+  document.addEventListener('click',event=>{const a=event.target.closest?.('a[target="_blank"]');if(a?.href?.startsWith('https://')){event.preventDefault();Browser.open({url:a.href}).catch(e=>alert(e.message))}});
   const safeName=name=>String(name||'Document.pdf').replace(/[^a-zA-Z0-9._-]/g,'_').slice(0,120);
   const base64=blob=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(reader.error);reader.readAsDataURL(blob)});
   async function shareFiles(data){

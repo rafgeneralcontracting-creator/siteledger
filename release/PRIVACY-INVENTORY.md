@@ -2,7 +2,7 @@
 
 Do not publish this inventory as a privacy policy. It documents items to verify before completing store declarations and public policy.
 
-Operator for proposed launch: RAF General Contracting Corp. Confirm final support contact and postal address.
+Operator for proposed launch: Hamit Development Inc. Confirm final support contact and postal address.
 
 | Data | Purpose | Implementation / verification |
 | --- | --- | --- |

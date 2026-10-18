@@ -1,10 +1,10 @@
-# RAF Construction Management — provisional store listings
+# Hamit Construction Management — provisional store listings
 
-Status: draft, not submitted. Name is 27 characters. An exact business-name match exists in Florida public records; absence of an indexed app listing does not establish availability. Confirm final name before reserving store records, bundle IDs and domains.
+Status: prepared for Hamit Development Inc., not submitted. Name is 29 characters. No indexed exact-name app match found on 2026-10-18. Store availability remains unconfirmed; no trademark clearance or reservation is implied.
 
 ## Apple App Store
 
-Name: RAF Construction Management
+Name: Hamit Construction Management
 
 Subtitle: Drawings, reports & jobsite log
 
@@ -16,7 +16,7 @@ Keywords: jobsite,daily report,drawings,RFI,submittals,contractor,field,manpower
 
 ## Google Play
 
-Name: RAF Construction Management
+Name: Hamit Construction Management
 
 Short description: Manage jobsite drawings, daily reports, progress photos, RFIs and submittals.
 
@@ -24,7 +24,7 @@ Category: Business
 
 ## Full description for both stores
 
-RAF Construction Management helps construction teams keep jobsite information organized and accessible from the field and office.
+Hamit Construction Management helps construction teams keep jobsite information organized and accessible from the field and office.
 
 Create a company workspace, organize projects and assign your team. Record daily work, manpower, deliveries and issues. Add progress photos and prepare client-ready PDF reports.
 
@@ -46,3 +46,7 @@ Create a dedicated review company with synthetic projects, drawings, daily repor
 Capture actual native-app screenshots on iPhone, iPad if supported, and Android after device QA. Do not submit browser mockups as evidence of native behavior. Suggested sequence: company overview, drawing viewer, daily report with sample photos, RFI, submittal log.
 
 Before submitting: final icon and name, working support/privacy/deletion URLs, completed privacy labels/Data Safety form, signed binaries and account deletion workflow.
+
+## Subscriptions
+
+Eligible new subscribers can choose a 3-day free trial, automatically renewing monthly at the displayed store price unless cancelled. Account creation alone does not authorize billing. Restore purchases and manage-subscription controls must work before submission. Store configuration and verified server entitlements are launch gates.

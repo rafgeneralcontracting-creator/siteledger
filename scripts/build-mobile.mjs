@@ -16,12 +16,12 @@ for(const asset of assets){
   if(asset==='native.js'||asset==='native.css')continue;
   let content=await readFile(resolve(root,asset),'utf8');
   if(asset.endsWith('.js')){
-    for(const phrase of ['Loading SiteLedger…','Sign in to SiteLedger','SiteLedger beta','No SiteLedger profile found.','You were invited to SiteLedger.'])content=content.replaceAll(phrase,phrase.replace('SiteLedger',config.appName));
-    content=content.replaceAll('>SiteLedger<','>'+config.appName+'<').replaceAll("||'SiteLedger'","||'"+config.appName+"'").replaceAll("shell('SiteLedger'","shell('"+config.appName+"'").replaceAll('class="logo">SL<','class="logo">RAF<');
+    for(const phrase of ['Loading SiteLedger…','Sign in to SiteLedger','SiteLedger beta','No SiteLedger profile found.','You were invited to SiteLedger.','SiteLedger Invite','invited to SiteLedger','stays in SiteLedger'])content=content.replaceAll(phrase,phrase.replace('SiteLedger',config.appName));
+    content=content.replaceAll('>SiteLedger<','>'+config.appName+'<').replaceAll("||'SiteLedger'","||'"+config.appName+"'").replaceAll("shell('SiteLedger'","shell('"+config.appName+"'").replaceAll('class="logo">SL<','class="logo">H<');
     if(asset==='team-management.js')content=content.replaceAll('${location.origin}${location.pathname}','https://rafgeneralcontracting-creator.github.io/siteledger/');
   }
-  if(asset==='manifest.webmanifest'){const m=JSON.parse(content);m.name=config.appName;m.short_name='RAF CM';content=JSON.stringify(m,null,2)}
-  if(asset==='icon.svg')content=content.replace('font-size="150"','font-size="112"').replace('>SL<','>RAF<');
+  if(asset==='manifest.webmanifest'){const m=JSON.parse(content);m.name=config.appName;m.short_name='Hamit CM';content=JSON.stringify(m,null,2)}
+  if(asset==='icon.svg')content=await readFile(resolve(root,'mobile/assets/icon.svg'),'utf8');
   if(asset==='lazy-libraries.js')content=content.replaceAll('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/','vendor/').replaceAll('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/','vendor/').replaceAll('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/','vendor/').replaceAll('pdf.worker.min.js','pdf.worker.min.mjs');
   await writeFile(resolve(out,asset),content);
 }
@@ -33,5 +33,6 @@ await cp(resolve(root,'node_modules/pdfjs-dist/wasm'),resolve(out,'vendor/wasm')
 await build({entryPoints:[resolve(root,'mobile/pdf-runtime.mjs')],outfile:resolve(out,'vendor/pdf.min.js'),bundle:true,format:'iife',target:['es2022'],platform:'browser'});
 await cp(resolve(root,'mobile/native.css'),resolve(out,'native.css'));
 await build({entryPoints:[resolve(root,'mobile/native.js')],outfile:resolve(out,'native.js'),bundle:true,format:'iife',target:['es2022'],platform:'browser'});
+await cp(resolve(root,'public'),resolve(out,'public'),{recursive:true});
 await writeFile(resolve(out,'index.html'),html);
 console.log('Built installed mobile bundle: '+out);
