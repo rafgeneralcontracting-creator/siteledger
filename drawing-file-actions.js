@@ -80,7 +80,17 @@
     });
     if (route?.screen === 'drawing') {
       const head = document.querySelector('.sl-viewer-head');
-      if (head && !head.querySelector('.sl-file-export')) head.appendChild(actions(route.drawingId));
+      if (head && !head.querySelector('.sl-viewer-file-menu')) {
+        const menu = document.createElement('details'); menu.className = 'sl-viewer-file-menu';
+        const trigger = document.createElement('summary');
+        trigger.className = 'sl-viewer-file-trigger'; trigger.textContent = '•••';
+        trigger.setAttribute('aria-label', 'Drawing file actions'); trigger.title = 'Download or share drawing';
+        const exports = actions(route.drawingId);
+        exports.setAttribute('role', 'group'); exports.setAttribute('aria-label', 'Drawing file actions');
+        exports.addEventListener('click', e => {if (e.target.closest('button')) menu.open = false;});
+        menu.addEventListener('keydown', e => {if (e.key === 'Escape') {menu.open = false; trigger.focus();}});
+        menu.append(trigger, exports); head.appendChild(menu);
+      }
     }
   }
   window.addEventListener('sl:drawings-mounted', decorate);
