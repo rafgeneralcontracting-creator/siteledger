@@ -19,7 +19,7 @@ Engineering candidate; NOT ready to submit or charge subscribers yet. User chose
 
 ## Live backend changes in this session
 
-`schema/hamit-release-services.sql` applied successfully; rollback-only fixture passed request privacy/idempotency, billing-owner isolation, admin self-promotion prevention, paid/disabled access and denied client billing writes. Subscription enforcement remains OFF. The new billing-sync endpoint is deployed and fails closed without RevenueCat credentials. Existing authenticated Edge Function replacements remain prepared, not deployed. No real account or project was deleted. Quota SQL application must be verified in database before claiming deployed; a tool request-state error occurred on the first attempt.
+`schema/hamit-release-services.sql` applied successfully; rollback-only fixture passed request privacy/idempotency, billing-owner isolation, admin self-promotion prevention, paid/disabled access and denied client billing writes. Subscription enforcement remains OFF. The new billing-sync endpoint is deployed and fails closed without RevenueCat credentials. Existing authenticated Edge Function replacements remain prepared, not deployed. No real account or project was deleted. Quota deployment was completed in smaller statements on the follow-up turn; live verification confirmed the usage table, all three functions, both seat/project triggers and both storage policies. Subscription billing remains disabled.
 
 ## Required before submission
 
@@ -36,7 +36,7 @@ Engineering candidate; NOT ready to submit or charge subscribers yet. User chose
 
 Local mobile bundle build and cap sync pass. Application/drawing/PDF/download tests and subscription normalization/cost tests pass. Production dependency audit reported zero vulnerabilities. Rollback-only database fixtures pass access/deletion and Starter project/storage/AI quota scenarios. No store transaction, signed release or real-device pass is claimed.
 
-Local Playwright visual QA was attempted but browser installation returned a truncated download; browser screenshots were NOT verified. Re-run policy/deletion UI checks in an available browser before publishing. Prior October 9 native compilation applies to the earlier RAF candidate, not proof that this Hamit/RevenueCat candidate compiles; inspect new CI native artifacts.
+The Hamit native candidate passed iOS and Android CI in run 39136740527. The new dashboard UI was rendered with synthetic data at phone, tablet and desktop sizes, with no horizontal overflow or page errors; public policy layouts and the authenticated deletion form were also tested in a browser. Store signing and real-device testing remain separate requirements.
 
 ## Build
 
@@ -48,3 +48,7 @@ npx cap sync
 ```
 
 Use Node 24, JDK 21/Android SDK 36 and current Xcode. Distribution credentials/keystores stay out of source control. Mobile CI only creates unsigned/test candidates.
+
+## UI and next-release scope
+
+Added a responsive overview with active-project cards, actionable counts, needs-attention reports, desktop sidebar navigation, mobile navigation, accessible buttons/focus states and a quieter visual system. Drawing canvas CSS and gesture handlers are unchanged. User chose to defer estimates/invoices and new AI drafting until after launch; see NEXT-RELEASE.md.

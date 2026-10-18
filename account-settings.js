@@ -20,6 +20,6 @@
    closeModal();alert('Deletion request recorded. Reference: '+result.id+'. Your account is not deleted yet. Cancel any store subscription separately.');
   }catch(e){password.value='';status.textContent=e.message||'Could not record request.';button.disabled=false}
  };
- function decorate(){if(route?.screen!=='home'||!me||$('hamit_account_settings'))return;const signout=document.querySelector('[onclick="logout()"]');if(!signout)return;const b=document.createElement('button');b.id='hamit_account_settings';b.className='btn secondary block';b.style.marginBottom='10px';b.textContent='Account & subscription';b.onclick=openAccountSettings;signout.before(b)}
+ function decorate(){if(route?.screen!=='home'||!me||$('hamit_account_settings')||document.querySelector('.ui-home-account'))return;const signout=document.querySelector('[onclick="logout()"]');if(!signout)return;const b=document.createElement('button');b.id='hamit_account_settings';b.className='btn secondary block';b.style.marginBottom='10px';b.textContent='Account & subscription';b.onclick=openAccountSettings;signout.before(b)}
  window.addEventListener('sl:screen-mounted',decorate);
 })();
