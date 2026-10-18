@@ -164,3 +164,16 @@ body.sl-workspace-active .sl-workspace-page{
   .sl-workspace-active .sl-canvas-wrap{top:calc(env(safe-area-inset-top) + 33px)!important}
   .sl-workspace-active .sl-viewbar{top:calc(env(safe-area-inset-top) + 38px)!important}
 }
+/* Larger touch targets with one consistent navigation bar. */
+.sl-workspace-active .sl-viewer-head{height:44px!important;min-height:44px!important;padding:3px 6px!important}
+.sl-workspace-active .sl-viewer-head>.btn{height:36px!important;min-height:36px!important;font-size:12px!important}
+.sl-workspace-active .sl-viewer-file-trigger{width:40px;height:36px}
+.sl-workspace-active .sl-canvas-wrap{top:calc(env(safe-area-inset-top) + 44px)!important}
+.sl-workspace-active .sl-viewbar{top:calc(env(safe-area-inset-top) + 50px)!important;height:42px!important;min-height:42px!important;padding:3px 5px!important;flex-wrap:nowrap!important}
+.sl-workspace-active .sl-viewbar .sl-toolbtn,.sl-workspace-active .sl-viewbar .sl-zoomlabel,.sl-workspace-active .sl-viewbar .sl-page-select,.sl-workspace-active .sl-viewbar .sl-drawing-done{height:34px!important;min-height:34px!important;font-size:12px!important}
+.sl-workspace-active .sl-viewbar .sl-toolbtn{min-width:34px!important}
+.sl-workspace-active .sl-viewbar .sl-zoomlabel{min-width:52px!important}
+.sl-workspace-active .sl-page-controls{min-width:0;flex:1 1 auto}
+.sl-workspace-active .sl-page-controls>.sl-toolbtn{display:none!important}
+.sl-workspace-active .sl-viewbar .sl-page-select{min-width:0;width:100%;flex:1}
+.sl-workspace-active .sl-zoom-controls,.sl-workspace-active .sl-drawing-done{flex:0 0 auto}

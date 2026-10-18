@@ -37,9 +37,9 @@ function harness({pages=250,mobile=true,hold=false}={}){
   function find(node,id){if(node.id===id)return node;for(const c of node.children){const out=find(c,id);if(out)return out}return null}
   const pdf={numPages:pages,getPage:async n=>{
     const w=n%2===0?600:1000,h=n%2===0?1000:700;
-    return {getViewport:({scale})=>({width:w*scale,height:h*scale}),render:({canvasContext})=>{
+    return {getViewport:({scale})=>({width:w*scale,height:h*scale}),render:({canvasContext,transform})=>{
       let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no});running++;peak=Math.max(peak,running);
-      const entry={n,canvas:canvasContext.canvas,cancelled:false,resolve};rendered.push(entry);promise.then(()=>running--,()=>running--);
+      const entry={n,canvas:canvasContext.canvas,transform,cancelled:false,resolve};rendered.push(entry);promise.then(()=>running--,()=>running--);
       const task={promise,cancel(){if(entry.cancelled)return;entry.cancelled=true;const e=Error('cancelled');e.name='RenderingCancelledException';reject(e)}};
       if(!hold)resolve();return task;
     }};
@@ -109,7 +109,7 @@ async function zooming(){
   h.ctx.siteLedgerDrawingMarkupPending=()=>true;await h.ctx.siteLedgerDrawingScroll.resume();assert(!h.ctx.siteLedgerDrawingScroll.active,'Done waits for markup saving');h.ctx.siteLedgerDrawingMarkupPending=()=>false;
   await h.ctx.siteLedgerDrawingScroll.resume();await h.settle();assert(h.ctx.siteLedgerDrawingScroll.active);assert.equal(h.doc.getElementById('sl_page_select').value,'20');assert.equal(h.sheets()[19].children[1].style.height,Math.round(h.wrap.clientWidth*4*(1000/600))+'px','Done preserves zoom');
   h.ctx.fitDrawing();await h.runTimers();assert.equal(h.sheets()[19].children[1].style.height,Math.round(h.wrap.clientWidth*(1000/600))+'px');
-  h.wrap.trigger('wheel',{ctrlKey:true,deltaY:-1,clientX:200,clientY:200,preventDefault(){}});await h.runTimers();assert.equal(h.sheets()[19].children[1].style.height,Math.round(h.wrap.clientWidth*1.12*(1000/600))+'px','trackpad zoom works directly');
+  h.wrap.trigger('wheel',{ctrlKey:true,deltaY:-1,clientX:200,clientY:200,preventDefault(){}});await h.runTimers();assert.equal(h.sheets()[19].children[1].style.height,Math.round(h.wrap.clientWidth*1.004*(1000/600))+'px','small trackpad deltas give small proportional zoom steps');
   await h.ctx.siteLedgerDrawingScroll.destroy();await h.settle();assert.equal(h.wrap.handlers.get('touchmove').length,0);
   console.log('PASS direct pinch and wheel zoom, deferred sharpening, anchor preservation, correct-sheet tools and return zoom');
 }
@@ -120,6 +120,27 @@ async function markupTransition(){
   await h.ctx.doneDrawingMarkup();await h.settle();assert(!h.doc.getElementById('sl_markup_session_bar'));assert(h.ctx.siteLedgerDrawingScroll.active,'markup Done returns directly to scrolling');assert.equal(select.value,'20');
   await h.ctx.siteLedgerDrawingScroll.destroy();await h.settle();
   console.log('PASS actual markup tool survives page transition and Done returns to browsing');
+}
+async function preciseNavigation(){
+  const h=harness({pages:4});await h.mount();h.ctx.changeDrawingZoom(3);await h.runTimers();await h.runTimers();
+  h.wrap.scrollLeft=400;h.wrap.scrollTop=110;
+  const touches=[{clientX:100,clientY:180},{clientX:300,clientY:180}];
+  h.wrap.trigger('touchstart',{touches});
+  h.wrap.trigger('touchmove',{touches:[{clientX:50,clientY:180},{clientX:350,clientY:180}],preventDefault(){}});
+  h.wrap.trigger('touchmove',{touches:[{clientX:40,clientY:185},{clientX:360,clientY:185}],preventDefault(){}});
+  assert.equal(h.sheets()[0].children[1].style.height,'1176px','gesture updates wait for the next screen frame');
+  h.wrap.trigger('touchend',{touches:[]});const top=h.wrap.scrollTop,left=h.wrap.scrollLeft;
+  await h.runTimers();await h.runTimers();assert.equal(h.wrap.scrollTop,top,'releasing and sharpening never snaps the sheet vertically');assert.equal(h.wrap.scrollLeft,left,'releasing and sharpening never recenters horizontally');
+  const detail=h.rendered.find(r=>r.transform);assert(detail,'zoomed viewport gets a clipped detail render');assert(detail.canvas.width*detail.canvas.height<=3000000,'phone detail buffer is capped');assert(detail.transform[4]<=0&&detail.transform[5]<=0,'detail uses document coordinates');
+  await h.ctx.fitDrawingPage();await h.runTimers();assert(parseInt(h.sheets()[0].children[1].style.height)<=h.wrap.clientHeight-116,'Fit Page reserves room for floating controls');
+  await h.ctx.fitDrawing();await h.runTimers();assert.equal(h.sheets()[0].children[1].style.height,'294px','Fit Width restores viewport width');
+  h.ctx.changeDrawingZoom(2);await h.runTimers();h.wrap.scrollLeft=300;h.wrap.scrollTop=400;
+  h.wrap.trigger('pointerdown',{pointerType:'mouse',button:0,pointerId:1,clientX:200,clientY:200,preventDefault(){}});
+  h.wrap.trigger('pointermove',{pointerId:1,clientX:150,clientY:160,preventDefault(){}});assert.equal(h.wrap.scrollLeft,350);assert.equal(h.wrap.scrollTop,440);
+  h.wrap.trigger('pointerup',{pointerId:1});assert(!h.wrap.classList.contains('sl-is-panning'));
+  await h.ctx.siteLedgerDrawingScroll.destroy();await h.runTimers();assert.equal(h.canvases().length,0,'leaving releases base and detail buffers');assert.equal(h.wrap.handlers.get('pointermove').length,0);
+  const pending=harness({pages:1});await pending.mount();pending.ctx.changeDrawingZoom(2);await pending.runTimers();pending.hold(true);await pending.runTimers();assert(pending.rendered.some(r=>r.transform&&!r.cancelled),'detail render is in flight');await pending.ctx.siteLedgerDrawingScroll.destroy();await pending.settle();assert.equal(pending.running(),0,'leaving cancels the in-flight detail job');assert(pending.rendered.filter(r=>r.transform).every(r=>r.canvas.width===0),'stale detail buffers are released');
+  console.log('PASS frame-batched pinch, no release snapping, bounded detail rendering, fit modes and desktop dragging');
 }
 async function markupGestures(){
   const h=harness({pages:1});await h.mount();h.ctx.me={id:'tester'};const writes=[];let pendingSave=null;
@@ -139,4 +160,4 @@ async function markupGestures(){
   await h.ctx.siteLedgerDrawingScroll.destroy();
   console.log('PASS markup pinch rejection, outside-canvas gestures, pointer isolation, jitter filtering, saving and highlighter/eraser guards');
 }
-(async()=>{await browsing();await cancellation();await zooming();await markupTransition();await markupGestures()})().catch(error=>{console.error(error);process.exitCode=1});
+(async()=>{await browsing();await cancellation();await zooming();await preciseNavigation();await markupTransition();await markupGestures()})().catch(error=>{console.error(error);process.exitCode=1});
