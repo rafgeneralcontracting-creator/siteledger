@@ -16,4 +16,4 @@ QuickBooks is already used by the owner. Decide whether this app drafts and sync
 
 AI retrieval must enforce the caller's company/project/file permissions before selecting content. Treat drawing text and attachments as untrusted data, never instructions. Log model usage without retaining unnecessary client document contents, enforce per-company budget limits and obtain appropriate disclosure/consent before transmitting documents. No autonomous issue/send, QuickBooks posting, payment collection or pricing commitments.
 
-Current AI feature: optional sign-in-sheet extraction. Its source hardening includes active access, image size limits, `store:false`, and company attempt quotas; production deployment and runtime tests must be verified before claiming those protections live.
+Current AI feature: optional sign-in-sheet extraction. Its source hardening includes active access, image size limits, `store:false`, and company attempt quotas; the hardened function is deployed. Anonymous requests are rejected; positive signed-in scan and quota tests remain part of release QA.
