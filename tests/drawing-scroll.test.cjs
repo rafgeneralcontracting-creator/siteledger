@@ -101,8 +101,8 @@ async function zooming(){
   assert(!old.parentNode,'completed sharp buffer replaces old canvas');assert.equal(old.width,0);
   const touches=(a,b)=>[{clientX:a,clientY:300},{clientX:b,clientY:300}];let prevented=false;const before=h.rendered.length;
   h.wrap.trigger('touchstart',{touches:touches(110,310)});h.wrap.trigger('touchmove',{touches:touches(10,410),preventDefault(){prevented=true}});await h.settle();
-  assert(prevented);assert.equal(paper.style.height,Math.round(h.wrap.clientWidth*4*(700/1000))+'px');assert.equal(h.wrap.scrollLeft,630,'pinch preserves the drawing point under the fingers');assert.equal(h.rendered.length,before,'no PDF rendering while fingers are moving');assert(h.ctx.siteLedgerDrawingScroll.active);assert.equal(h.selected.length,0,'pinching never requires page selection');
-  h.wrap.trigger('touchend',{touches:[]});await h.runTimers();
+  assert(prevented);assert.equal(paper.style.height,Math.round(h.wrap.clientWidth*2*(700/1000))+'px','pinching does not resize any drawing surface');assert.match(paper.parentNode.parentNode.style.transform,/scale\(2\)/,'pinch scales the existing stack as one surface');assert.equal(h.rendered.length,before,'no PDF rendering while fingers are moving');assert(h.ctx.siteLedgerDrawingScroll.active);assert.equal(h.selected.length,0,'pinching never requires page selection');
+  h.wrap.trigger('touchend',{touches:[]});assert.equal(h.wrap.scrollLeft,630,'committing pinch preserves the drawing point under the fingers');assert.equal(paper.parentNode.parentNode.style.transform,'');await h.runTimers();
   for(const r of h.rendered.filter(r=>r.canvas.width)){assert(r.canvas.width*r.canvas.height<=4000000);assert(Math.max(r.canvas.width,r.canvas.height)<=4096)}assert(h.canvases().length<=3,'zoomed pages use a smaller canvas cache');
   h.wrap.scrollTop=h.sheets()[19].offsetTop;h.wrap.trigger('scroll');await h.settle();assert.equal(h.doc.getElementById('sl_page_select').value,'20');
   await h.ctx.slFieldMarkup();await h.settle();assert.equal(h.toolCalls.at(-1).page,20);assert.equal(h.context.zoom,4,'tool receives the same zoom');
@@ -129,6 +129,7 @@ async function preciseNavigation(){
   h.wrap.trigger('touchmove',{touches:[{clientX:50,clientY:180},{clientX:350,clientY:180}],preventDefault(){}});
   h.wrap.trigger('touchmove',{touches:[{clientX:40,clientY:185},{clientX:360,clientY:185}],preventDefault(){}});
   assert.equal(h.sheets()[0].children[1].style.height,'1176px','gesture updates wait for the next screen frame');
+  await h.settle();assert.equal(h.sheets()[0].children[1].style.height,'1176px','even preview frames keep every canvas and page dimension stable');assert.match(h.sheets()[0].parentNode.style.transform,/scale/);
   h.wrap.trigger('touchend',{touches:[]});const top=h.wrap.scrollTop,left=h.wrap.scrollLeft;
   await h.runTimers();await h.runTimers();assert.equal(h.wrap.scrollTop,top,'releasing and sharpening never snaps the sheet vertically');assert.equal(h.wrap.scrollLeft,left,'releasing and sharpening never recenters horizontally');
   assert(h.rendered.every(r=>!r.transform),'browsing uses one full-page surface, with no overlapping detail copies');for(const paper of h.sheets().map(s=>s.children[1]))assert(paper.querySelectorAll('canvas').length<=1,'each sheet has only one visible drawing canvas');

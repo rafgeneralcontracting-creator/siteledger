@@ -109,7 +109,7 @@
     }
     function schedule(){if(state.frame!==null)return;state.frame=requestAnimationFrame(()=>{state.frame=null;update()})}
     async function stop(){
-      state.active=false;state.generation++;state.pinch=null;state.gesturing=false;clearTimeout(state.zoomTimer);state.zoomTimer=null;cancelAnimationFrame(state.zoomFrame);state.zoomFrame=null;state.pendingZoom=null;
+      state.active=false;state.generation++;state.pinch=null;state.gesturing=false;wrap.classList.remove('sl-is-pinching');clearTimeout(state.zoomTimer);state.zoomTimer=null;cancelAnimationFrame(state.zoomFrame);state.zoomFrame=null;state.pendingZoom=null;
       if(state.frame!==null)cancelAnimationFrame(state.frame);state.frame=null;
       const pending=[];for(const row of state.rows){row.cancelRender?.();if(row.task){row.task.cancel();pending.push(row.task.promise.catch(()=>{}))}}
       await Promise.all(pending);
@@ -160,8 +160,25 @@
       for(const row of state.rows){row.width=state.baseWidth*state.zoom;row.paper.style.height=Math.max(40,Math.round(row.width*row.ratio))+'px'}
       restorePoint(anchor);label();if(sharpen)sharp();schedule();
     };
-    function flushZoom(){if(state.zoomFrame!==null)cancelAnimationFrame(state.zoomFrame);state.zoomFrame=null;const next=state.pendingZoom;state.pendingZoom=null;if(next)state.setZoom(next.zoom,next.anchor,false);}
-    function queueZoom(zoom,anchor){state.pendingZoom={zoom,anchor};if(state.zoomFrame===null)state.zoomFrame=requestAnimationFrame(flushZoom);}
+    function flushZoom(){
+      if(state.zoomFrame!==null)cancelAnimationFrame(state.zoomFrame);state.zoomFrame=null;
+      const next=state.pendingZoom;state.pendingZoom=null;
+      if(state.list){state.list.style.transform='';state.list.style.transformOrigin='';}
+      if(next)state.setZoom(next.zoom,next.anchor,false);
+    }
+    function queueZoom(zoom,anchor){
+      state.pendingZoom={zoom:Math.max(.25,Math.min(8,zoom)),anchor};
+      if(state.zoomFrame!==null)return;
+      state.zoomFrame=requestAnimationFrame(()=>{
+        state.zoomFrame=null;const next=state.pendingZoom,pinch=state.pinch;if(!next||!pinch||!state.list)return;
+        const row=state.rows[pinch.anchor.n-1];if(!row)return;
+        // Keep canvas dimensions and native scroll geometry unchanged throughout a pinch.
+        const originX=pinch.anchor.x*row.width,originY=row.card.offsetTop+(row.card.children[0]?.offsetHeight||0)+pinch.anchor.y*row.paper.offsetHeight;
+        state.list.style.transformOrigin=originX+'px '+originY+'px';
+        state.list.style.transform='translate('+(next.anchor.px-pinch.anchor.px)+'px,'+(next.anchor.py-pinch.anchor.py)+'px) scale('+(next.zoom/pinch.zoom)+')';
+        const label=q('sl_zoom_label');if(label)label.textContent=Math.round(next.zoom*100)+'%';
+      });
+    }
     state.fit=async mode=>{
       if(!state.active)return;flushZoom();const row=state.rows[state.current-1];if(!row)return;
       const generation=state.generation;

@@ -34,6 +34,7 @@
 .sl-scroll-active .sl-canvas-wrap.sl-is-pinching .sl-scroll-sheet-head{opacity:.5!important}
 .sl-scroll-active .sl-canvas-wrap.sl-is-pinching .sl-scroll-sheet{box-shadow:none!important}
 .sl-scroll-active .sl-canvas-wrap.sl-is-pinching .sl-scroll-list{will-change:auto}
+.sl-scroll-active .sl-canvas-wrap.sl-is-pinching{overflow:hidden!important}
 .sl-scroll-active .sl-scroll-canvas{backface-visibility:visible;transform:none}
 .sl-scroll-active .sl-scroll-list{padding-top:48px;padding-bottom:72px;box-sizing:content-box;overflow-anchor:none}
 .sl-scroll-pin,.sl-scroll-page-status{z-index:2}
