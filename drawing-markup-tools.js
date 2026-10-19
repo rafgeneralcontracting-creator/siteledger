@@ -122,13 +122,18 @@
   }
   function scheduleSnap(){
     clearTimeout(shapeTimer);if(tool!=='pen'||!stroke||stroke.snapped)return;
-    shapeTimer=setTimeout(()=>{if(!stroke||tool!=='pen'||stroke.snapped)return;const found=recognizeShape(rawStroke||stroke.geometry.points);if(found){stroke.geometry.points=found.points;stroke.snapped=true;stroke.shapeType=found.type;stroke.shapeBounds=found.bounds||null;try{navigator.vibrate?.(15)}catch(_){}render()}},420);
+    shapeTimer=setTimeout(()=>{if(!stroke||tool!=='pen'||stroke.snapped)return;const found=recognizeShape(rawStroke||stroke.geometry.points);if(found){stroke.geometry.points=found.points;stroke.snapped=true;stroke.shapeType=found.type;stroke.shapeBounds=found.bounds||null;stroke.snapPointer={...stroke.lastPointer};try{navigator.vibrate?.(15)}catch(_){}render()}},420);
   }
   function updateSnapped(end){
     if(!stroke?.snapped||!rawStroke?.length)return;
     if(stroke.shapeType==='line'){stroke.geometry.points=[rawStroke[0],end];return}
     if(!stroke.shapeBounds)return;
-    const b=stroke.shapeBounds,w=Math.max(.005,Math.abs(end.x-b.minX)),h=Math.max(.005,Math.abs(end.y-b.minY)),minX=Math.min(b.minX,end.x),maxX=Math.max(b.minX,end.x),minY=Math.min(b.minY,end.y),maxY=Math.max(b.minY,end.y);
+    // Closing a shape returns the pointer to its start, not its opposite corner.
+    // Resize relative to the pointer position at recognition so release cannot collapse it.
+    const b=stroke.shapeBounds,origin=stroke.snapPointer||end,r=canvas().getBoundingClientRect();
+    let dx=end.x-origin.x,dy=end.y-origin.y;
+    if(Math.hypot(dx*r.width,dy*r.height)<3){dx=0;dy=0}
+    const minX=b.minX,minY=b.minY,maxX=Math.max(minX+.005,Math.min(1,b.maxX+dx)),maxY=Math.max(minY+.005,Math.min(1,b.maxY+dy));
     if(stroke.shapeType==='rect')stroke.geometry.points=[{x:minX,y:minY},{x:maxX,y:minY},{x:maxX,y:maxY},{x:minX,y:maxY},{x:minX,y:minY}];
     if(stroke.shapeType==='ellipse'){const cx=(minX+maxX)/2,cy=(minY+maxY)/2,out=[];for(let i=0;i<=56;i++){const a=i/56*Math.PI*2;out.push({x:cx+Math.cos(a)*(maxX-minX)/2,y:cy+Math.sin(a)*(maxY-minY)/2})}stroke.geometry.points=out}
   }
@@ -189,7 +194,7 @@
     if(gestureBlocked||saving||(e.pointerType==='mouse'&&e.button!==0))return;
     drawingPointer=e.pointerId;const p=point(e);clearTimeout(shapeTimer);
     if(tool==='eraser'){eraserPath=[p];previewMarks=marks;try{e.target.setPointerCapture(e.pointerId)}catch(_){}queuePaint();e.preventDefault();return}
-    const hi=tool==='highlight';rawStroke=[p];stroke={markup_type:hi?'highlight':'freehand',geometry:{points:[p]},color:hi?(color==='#111827'?'#f59e0b':color):color,stroke_width:hi?20:3,opacity:hi?.28:1,is_highlighter:hi,snapped:false,shapeType:null,shapeBounds:null,pointerType:e.pointerType};
+    const hi=tool==='highlight';rawStroke=[p];stroke={markup_type:hi?'highlight':'freehand',geometry:{points:[p]},color:hi?(color==='#111827'?'#f59e0b':color):color,stroke_width:hi?20:3,opacity:hi?.28:1,is_highlighter:hi,snapped:false,shapeType:null,shapeBounds:null,lastPointer:p,pointerType:e.pointerType};
     try{e.target.setPointerCapture(e.pointerId)}catch(_){}e.preventDefault();
   }
   function addPoint(p,final=false){
@@ -206,7 +211,7 @@
     const samples=e.getCoalescedEvents?.()||[],batch=samples.length?samples:[e];let changed=false;
     for(const sample of batch){const p=point(sample);
       if(tool==='eraser'&&eraserPath){const last=eraserPath[eraserPath.length-1],r=canvas().getBoundingClientRect();if(!last||Math.hypot((p.x-last.x)*r.width,(p.y-last.y)*r.height)>2){eraserPath.push(p);changed=true}}
-      else if(stroke){if(stroke.snapped){updateSnapped(p);changed=true}else changed=addPoint(p)||changed}
+      else if(stroke){stroke.lastPointer=p;if(stroke.snapped){updateSnapped(p);changed=true}else changed=addPoint(p)||changed}
     }
     if(changed){queuePaint();scheduleSnap()}if(stroke||eraserPath)e.preventDefault();
   }

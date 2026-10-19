@@ -155,6 +155,18 @@ async function markupGestures(){
   down(1,100,100);move(9,300,250);move(1,110,100);move(1,120,101);move(1,130,100);assert(h.frames.size<=1,'live strokes paint at most once per frame');up(1,140,100);await h.settle();assert.equal(writes.length,1);const pts=JSON.parse(writes[0].options.body).geometry.points;assert(pts.every(p=>p.x<=.35),'other pointer cannot corrupt stroke');assert(pts[1].x<.275&&pts[1].x>.25,'stroke samples filter jitter');assert.equal(pts.at(-1).x,.35,'endpoint follows release position');assert.equal(JSON.parse(writes[0].options.body).drawing_sheet_id,'sheet1');
   let release;pendingSave=new Promise(resolve=>release=resolve);down(1,100,100);move(1,130,100);up(1,140,100);await flush();down(2,200,100);move(2,250,150);up(2,250,150);assert(h.ctx.siteLedgerDrawingMarkupPending());release();pendingSave=null;await h.settle();assert.equal(writes.length,2,'saving stroke cannot be replaced by another pointer');
   h.ctx.setDrawingMarkupTool('highlight');down(1,100,100);move(1,160,100);up(1,180,100);await h.settle();assert.equal(JSON.parse(writes.at(-1).options.body).markup_type,'highlight');
+  h.ctx.setDrawingMarkupTool('pen');
+  for(const kind of ['rectangle','circle']){
+    const before=writes.length;
+    const points=kind==='rectangle'
+      ? [...Array.from({length:21},(_,i)=>[80+i*8,60]),...Array.from({length:16},(_,i)=>[240,60+i*8]),...Array.from({length:21},(_,i)=>[240-i*8,180]),...Array.from({length:16},(_,i)=>[80,180-i*8])]
+      : Array.from({length:65},(_,i)=>[160+65*Math.cos(i/64*Math.PI*2),130+65*Math.sin(i/64*Math.PI*2)]);
+    const first=points[0],last=points.at(-1);down(1,...first);points.slice(1).forEach(p=>move(1,...p));await h.runTimers();
+    up(1,...last);await h.settle();assert.equal(writes.length,before+1,`${kind} stays saved after holding to snap and lifting at its start`);
+    const saved=JSON.parse(writes.at(-1).options.body).geometry.points;
+    assert(Math.max(...saved.map(p=>p.x))-Math.min(...saved.map(p=>p.x))>.25,`${kind} keeps its full width`);
+    assert(Math.max(...saved.map(p=>p.y))-Math.min(...saved.map(p=>p.y))>.3,`${kind} keeps its full height`);
+  }
   h.ctx.setDrawingMarkupTool('eraser');down(1,100,100);down(2,200,100);up(1,100,100);up(2,200,100);await h.settle();assert(writes.every(w=>w.options.method==='POST'),'pinching with eraser does not delete marks');
   await h.ctx.doneDrawingMarkup();await h.settle();assert(h.ctx.siteLedgerDrawingScroll.active);
   await h.ctx.siteLedgerDrawingScroll.destroy();
