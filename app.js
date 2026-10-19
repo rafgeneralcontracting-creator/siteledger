@@ -30,7 +30,7 @@ function queueSubmittedPdfRefresh(id,delay=700){if(!id)return;clearTimeout(daily
 async function refreshSubmittedPdf(id){if(dailyPdfRefreshRunning.has(id))return;dailyPdfRefreshRunning.add(id);try{const r=(await rest(`daily_reports?select=id,submitted,pdf_path&id=eq.${id}&limit=1`))[0];if(!r?.submitted||r.pdf_path)return;await edge('generate-report-pdf',{report_id:id});if(route?.screen==='report'&&route.reportId===id)await reportPage();else if(route?.screen==='reports')await reportsPage()}finally{dailyPdfRefreshRunning.delete(id);dailyPdfRefreshTimers.delete(id)}}
 function authLayout(content){app.innerHTML=`<div class="auth-shell"><section class="auth-visual"><div class="brandrow"><div class="logo">H</div><div><div class="brand">Hamit</div><div class="brandsub">Construction field management</div></div></div><div class="auth-copy"><h1>Know what happened on every jobsite.</h1><p>Daily reports, manpower, progress photos, automatic weather and client-ready PDF reports in one workspace.</p></div><div class="brandsub">Hamit Construction Management</div></section><section class="auth-panel"><div class="auth-card">${content}</div></section></div>`}
 function welcome(){authLayout(`<div class="brandrow" style="margin-bottom:24px"><div class="logo">H</div><div><div class="brand">Hamit</div><div class="small">Construction Field Management</div></div></div><div class="eyebrow">Welcome</div><h2>Run the field without chasing paperwork.</h2><p class="small" style="font-size:14px;margin-bottom:22px">Sign in or create a new company workspace.</p><button class="btn primary block" onclick="showSignin()">Sign In</button><button class="btn secondary block" style="margin-top:9px" onclick="showSignup()">Create Company Account</button>`)}
-function showSignin(msg=''){authLayout(`<div class="eyebrow">Welcome back</div><h2>Sign in to Hamit</h2>${msg}<div class="field"><label>Email</label><input id="si_email" type="email" autocomplete="email"></div><div class="field"><label>Password</label><input id="si_password" type="password" autocomplete="current-password"></div><button class="btn primary block" onclick="signin()">Sign In</button><button class="btn secondary block" style="margin-top:9px" onclick="welcome()">Back</button>`)}
+function showSignin(msg=''){authLayout(`<div class="eyebrow">Welcome back</div><h2>Sign in to Hamit</h2>${msg}<div class="field"><label>Email</label><input id="si_email" type="email" autocomplete="email"></div><div class="field"><label>Password</label><input id="si_password" type="password" autocomplete="current-password"></div><button class="btn primary block" onclick="signin()">Sign In</button><button class="btn secondary block" style="margin-top:9px" onclick="showForgotPassword()">Forgot password?</button><button class="btn secondary block" style="margin-top:9px" onclick="welcome()">Back</button>`)}
 function showSignup(msg=''){authLayout(`<div class="eyebrow">New company</div><h2>Create your workspace</h2>${msg}<div class="field"><label>Your full name</label><input id="su_name"></div><div class="field"><label>Company name</label><input id="su_company"></div><div class="field"><label>Email</label><input id="su_email" type="email"></div><div class="field"><label>Password</label><input id="su_password" type="password" minlength="8"></div><button class="btn primary block" onclick="signup()">Create Company Account</button><button class="btn secondary block" style="margin-top:9px" onclick="welcome()">Back</button>`)}
 async function signin(){try{const d=await api('/auth/v1/token?grant_type=password',{method:'POST',body:JSON.stringify({email:$('si_email').value.trim(),password:$('si_password').value})});saveSession(d);boot()}catch(e){showSignin(notice(e.message))}}
 async function signup(){const n=$('su_name').value.trim(),c=$('su_company').value.trim(),e=$('su_email').value.trim(),p=$('su_password').value;if(!n||!c||!e||p.length<8)return showSignup(notice('Complete all fields. Password must be at least 8 characters.'));try{const d=await api('/auth/v1/signup',{method:'POST',body:JSON.stringify({email:e,password:p,data:{full_name:n,company_name:c}})});if(d.access_token){saveSession(d);boot()}else showSignin(notice('Account created. Confirm your email if requested, then sign in.','success'))}catch(err){showSignup(notice(err.message))}}
@@ -85,6 +85,50 @@ function setupSignature(){sigCanvas=$('sig');if(!sigCanvas)return;const ratio=de
 function clearSignature(){if(sigCtx&&sigCanvas)sigCtx.clearRect(0,0,sigCanvas.width,sigCanvas.height)}
 async function saveSignature(){if(!sigCanvas)return;await rest(`daily_reports?id=eq.${route.reportId}`,{method:'PATCH',body:JSON.stringify({signature_path:sigCanvas.toDataURL('image/png'),updated_at:new Date().toISOString()})});reportPage()}
 async function submitReport(){if(!confirm('Submit this Daily Report? It will be locked and a client PDF will be generated.'))return;try{await rest(`daily_reports?id=eq.${route.reportId}`,{method:'PATCH',body:JSON.stringify({submitted:true,submitted_at:new Date().toISOString(),updated_at:new Date().toISOString()})});loading('Submitting and generating PDF…');try{await edge('generate-report-pdf',{report_id:route.reportId})}catch(e){alert('Report submitted, but PDF generation needs to be retried: '+e.message)}await reportPage()}catch(e){alert(e.message)}}
-Object.assign(window,{welcome,showSignin,showSignup,signin,signup,logout,go,projectForm,saveProject,closeModal,openPdf,sharePdf,generatePdf,manpowerForm,saveManpower,deliveryForm,saveDelivery,issueForm,saveIssue,photoForm,savePhoto,clearSignature,saveSignature,submitReport,toggleNoWork,createSaturdayReport});
+
+let passwordRecoveryToken='';
+function showForgotPassword(msg=''){
+ authLayout(`<div class="eyebrow">Account recovery</div><h2>Reset your password</h2><p class="small">Enter the email address used for your Hamit account. We'll email you a secure reset link.</p>${msg}<form onsubmit="event.preventDefault();requestPasswordReset()"><div class="field"><label>Email</label><input id="forgot_email" type="email" autocomplete="email" required></div><button id="forgot_submit" class="btn primary block" type="submit">Send reset link</button></form><button class="btn secondary block" style="margin-top:9px" onclick="showSignin()">Back to sign in</button>`);
+}
+async function requestPasswordReset(){
+ const email=$('forgot_email')?.value.trim();
+ if(!email)return;
+ const btn=$('forgot_submit');
+ btn.disabled=true;btn.textContent='Sending…';
+ try{
+  const redirectTo=window.location.origin+window.location.pathname;
+  await api('/auth/v1/recover?redirect_to='+encodeURIComponent(redirectTo),{method:'POST',body:JSON.stringify({email})});
+  showForgotPassword(notice('If an account exists for this email, a password reset link has been sent. Check your inbox and spam folder.','success'));
+ }catch(e){
+  showForgotPassword(notice('Could not send reset email: '+e.message));
+ }
+}
+function showNewPassword(msg=''){
+ authLayout(`<div class="eyebrow">Account recovery</div><h2>Create a new password</h2>${msg}<form onsubmit="event.preventDefault();saveNewPassword()"><div class="field"><label>New password</label><input id="reset_pass" type="password" autocomplete="new-password" minlength="8" required></div><div class="field"><label>Confirm new password</label><input id="reset_confirm" type="password" autocomplete="new-password" minlength="8" required></div><button id="reset_submit" class="btn primary block" type="submit">Update password</button></form>`);
+}
+async function saveNewPassword(){
+ const p=$('reset_pass').value,confirmP=$('reset_confirm').value;
+ if(p.length<8)return showNewPassword(notice('Password must be at least 8 characters.'));
+ if(p!==confirmP)return showNewPassword(notice('Passwords do not match.'));
+ const btn=$('reset_submit');btn.disabled=true;btn.textContent='Updating…';
+ try{
+  await api('/auth/v1/user',{method:'PUT',headers:{Authorization:'Bearer '+passwordRecoveryToken},body:JSON.stringify({password:p})});
+  passwordRecoveryToken='';
+  showSignin(notice('Password updated successfully. Sign in with your new password.','success'));
+ }catch(e){showNewPassword(notice(e.message))}
+}
+function handlePasswordRecovery(){
+ const h=new URLSearchParams(window.location.hash.slice(1));
+ const q=new URLSearchParams(window.location.search);
+ const type=h.get('type')||q.get('type');
+ const error=h.get('error_description')||h.get('error')||q.get('error_description');
+ if(type!=='recovery'&&!error)return false;
+ history.replaceState(null,'',window.location.pathname);
+ if(error){showSignin(notice('Password recovery link is invalid or expired. Request a new one.'));return true}
+ passwordRecoveryToken=h.get('access_token')||'';
+ if(!passwordRecoveryToken){showSignin(notice('Invalid recovery link. Please request a new one.'));return true}
+ showNewPassword();return true;
+}
+Object.assign(window,{welcome,showSignin,showForgotPassword,requestPasswordReset,saveNewPassword,showSignup,signin,signup,logout,go,projectForm,saveProject,closeModal,openPdf,sharePdf,generatePdf,manpowerForm,saveManpower,deliveryForm,saveDelivery,issueForm,saveIssue,photoForm,savePhoto,clearSignature,saveSignature,submitReport,toggleNoWork,createSaturdayReport});
 window.addEventListener('error',e=>{console.error(e.error||e.message)});
-if(token)boot();else welcome();
+if(!handlePasswordRecovery()){if(token)boot();else welcome();}
